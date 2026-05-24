@@ -3,360 +3,664 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StockFlow - Inventory App</title>
+    <title>StockFlow - Multi-Location Inventory</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: Arial, sans-serif; background: #f0f0f0; padding: 20px; }
-        .container { max-width: 1200px; margin: 0 auto; }
-        header { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-        header h1 { color: #0066cc; margin-bottom: 10px; }
-        .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
-        .tabs button { padding: 10px 20px; background: white; border: 2px solid #ccc; border-radius: 5px; cursor: pointer; font-size: 16px; }
-        .tabs button.active { background: #0066cc; color: white; border-color: #0066cc; }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
-        .card { background: white; padding: 20px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-        .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 20px; }
-        .stat { background: white; padding: 20px; border-radius: 8px; text-align: center; }
-        .stat-number { font-size: 32px; font-weight: bold; color: #0066cc; }
-        .stat-label { color: #666; margin-top: 5px; }
-        input, select { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px; font-size: 16px; }
-        button { padding: 10px 20px; background: #0066cc; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; margin-top: 10px; }
-        button.danger { background: #cc3333; }
-        button.success { background: #00aa00; }
-        .product-item, .delivery-item { background: #f9f9f9; padding: 15px; border-radius: 5px; margin-bottom: 10px; border-left: 4px solid #0066cc; }
-        .product-actions { display: flex; gap: 10px; margin-top: 10px; }
-        .product-actions button { flex: 1; margin: 0; padding: 8px; font-size: 14px; }
-        .low-stock { border-left-color: #ff6600; background: #fff3e0; }
-        .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; }
-        .modal.active { display: flex; align-items: center; justify-content: center; }
-        .modal-content { background: white; padding: 30px; border-radius: 8px; width: 90%; max-width: 500px; }
-        .modal-content h2 { margin-bottom: 20px; color: #0066cc; }
-        .modal-buttons { display: flex; gap: 10px; margin-top: 20px; }
-        .modal-buttons button { flex: 1; }
-        h3 { color: #0066cc; margin: 15px 0; }
+        .btn-large {
+            min-height: 48px;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+        input, select, textarea, button {
+            font-size: 16px;
+        }
+        .location-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        @keyframes pulse {
+            0% { opacity: 0.7; }
+            50% { opacity: 1; background-color: #dc2626; }
+            100% { opacity: 0.7; }
+        }
     </style>
 </head>
-<body>
-    <div class="container">
-        <header>
-            <h1>📦 StockFlow - Inventory Management</h1>
-            <p>Track products and deliveries - No setup required!</p>
-        </header>
+<body class="bg-gray-100 font-sans antialiased">
 
-        <!-- Tabs -->
-        <div class="tabs">
-            <button class="tab-btn active" data-tab="dashboard">📊 Dashboard</button>
-            <button class="tab-btn" data-tab="products">📦 Products</button>
-            <button class="tab-btn" data-tab="deliveries">🚚 Deliveries</button>
+    <!-- Main App Container -->
+    <div id="app" class="max-w-7xl mx-auto px-3 py-4 pb-20">
+        
+        <!-- Top bar -->
+        <div class="flex justify-between items-center bg-white p-4 rounded-xl shadow mb-4">
+            <div>
+                <h1 class="text-2xl font-bold text-blue-800">📦 StockFlow</h1>
+                <p class="text-xs text-gray-500">Multi-Location Inventory Management</p>
+            </div>
+            <div class="flex gap-2 items-center">
+                <span id="totalItems" class="text-sm bg-blue-100 px-3 py-1 rounded-full">Items: 0</span>
+                <button id="clearAllBtn" class="bg-red-500 text-white px-3 py-1 rounded text-sm">Clear All</button>
+            </div>
+        </div>
+
+        <!-- Tab Navigation -->
+        <div class="grid grid-cols-4 gap-2 mb-6 bg-white p-2 rounded-xl shadow overflow-x-auto">
+            <button data-tab="dashboard" class="tab-btn py-3 rounded-xl font-semibold bg-blue-600 text-white whitespace-nowrap">📊 Dashboard</button>
+            <button data-tab="locations" class="tab-btn py-3 rounded-xl font-semibold bg-gray-200 text-gray-700 whitespace-nowrap">📍 Locations</button>
+            <button data-tab="products" class="tab-btn py-3 rounded-xl font-semibold bg-gray-200 text-gray-700 whitespace-nowrap">📦 Products</button>
+            <button data-tab="transfers" class="tab-btn py-3 rounded-xl font-semibold bg-gray-200 text-gray-700 whitespace-nowrap">🚚 Transfers</button>
         </div>
 
         <!-- Dashboard Tab -->
-        <div id="dashboard" class="tab-content active">
-            <div class="grid">
-                <div class="stat">
-                    <div class="stat-number" id="totalProductsNum">0</div>
-                    <div class="stat-label">Total Products</div>
+        <div id="dashboardTab" class="tab-content">
+            <div class="grid grid-cols-2 gap-3 mb-5">
+                <div class="bg-white rounded-xl p-4 shadow text-center">
+                    <p class="text-gray-500 text-sm">📦 Total Products</p>
+                    <p id="totalProducts" class="text-3xl font-bold">0</p>
                 </div>
-                <div class="stat">
-                    <div class="stat-number" id="lowStockNum">0</div>
-                    <div class="stat-label">Low Stock</div>
+                <div class="bg-white rounded-xl p-4 shadow text-center">
+                    <p class="text-gray-500 text-sm">📍 Locations</p>
+                    <p id="totalLocations" class="text-3xl font-bold">0</p>
                 </div>
-                <div class="stat">
-                    <div class="stat-number" id="totalItemsNum">0</div>
-                    <div class="stat-label">Total Items</div>
+                <div class="bg-white rounded-xl p-4 shadow text-center">
+                    <p class="text-gray-500 text-sm">⚠️ Low Stock Items</p>
+                    <p id="lowStockAlert" class="text-3xl font-bold text-red-600">0</p>
                 </div>
-                <div class="stat">
-                    <div class="stat-number" id="deliveriesNum">0</div>
-                    <div class="stat-label">Deliveries</div>
+                <div class="bg-white rounded-xl p-4 shadow text-center">
+                    <p class="text-gray-500 text-sm">💼 Total Stock Value</p>
+                    <p id="totalValue" class="text-3xl font-bold text-green-600">$0</p>
                 </div>
             </div>
-            <div class="card">
-                <h3>⚠️ Low Stock Alerts</h3>
-                <div id="lowStockAlerts">No low stock items</div>
+
+            <!-- Stock by Location -->
+            <div class="bg-white rounded-xl p-4 shadow mb-4">
+                <h3 class="font-bold text-lg mb-3">📊 Stock Distribution by Location</h3>
+                <div id="stockByLocation" class="space-y-2"></div>
             </div>
+
+            <!-- Low Stock Alerts -->
+            <div class="bg-white rounded-xl p-4 shadow">
+                <h3 class="font-bold text-lg mb-3">⚠️ Low Stock Alerts</h3>
+                <div id="lowStockList" class="space-y-2"></div>
+            </div>
+        </div>
+
+        <!-- Locations Tab -->
+        <div id="locationsTab" class="tab-content hidden">
+            <div class="flex gap-2 mb-4">
+                <button id="addLocationBtn" class="bg-green-600 text-white px-4 py-2 rounded-xl flex-1 btn-large">➕ Add Location</button>
+                <input type="text" id="searchLocation" placeholder="🔍 Search locations..." class="flex-1 border p-2 rounded-xl">
+            </div>
+            <div id="locationsList" class="space-y-3"></div>
         </div>
 
         <!-- Products Tab -->
-        <div id="products" class="tab-content">
-            <button class="success" onclick="openProductModal()">➕ Add New Product</button>
-            <input type="text" id="searchProducts" placeholder="🔍 Search products..." style="margin-top: 15px;">
-            <button onclick="exportProducts()" style="background: #666; margin-left: 10px;">📥 Export</button>
-            <button onclick="clearAll()" class="danger" style="margin-left: 10px;">🗑️ Clear All</button>
-            <div id="productsList" style="margin-top: 20px;"></div>
+        <div id="productsTab" class="tab-content hidden">
+            <div class="flex gap-2 mb-4">
+                <button id="addProductBtn" class="bg-green-600 text-white px-4 py-2 rounded-xl flex-1 btn-large">➕ Add Product</button>
+                <input type="text" id="searchProduct" placeholder="🔍 Search products..." class="flex-1 border p-2 rounded-xl">
+                <button id="exportProductsBtn" class="bg-gray-700 text-white px-4 rounded-xl">📥 Export</button>
+            </div>
+            <div id="productsList" class="space-y-3"></div>
         </div>
 
-        <!-- Deliveries Tab -->
-        <div id="deliveries" class="tab-content">
-            <button class="success" onclick="openDeliveryModal()">🚚 New Delivery</button>
-            <div id="deliveriesList" style="margin-top: 20px;"></div>
+        <!-- Transfers Tab -->
+        <div id="transfersTab" class="tab-content hidden">
+            <div class="flex gap-2 mb-4">
+                <button id="addTransferBtn" class="bg-amber-600 text-white px-4 py-2 rounded-xl flex-1 btn-large">🚚 New Transfer</button>
+                <input type="text" id="searchTransfer" placeholder="🔍 Search transfers..." class="flex-1 border p-2 rounded-xl">
+            </div>
+            <div id="transfersList" class="space-y-3"></div>
+        </div>
+
+    </div>
+
+    <!-- Location Modal -->
+    <div id="locationModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl max-w-md w-full p-5">
+            <h3 class="text-xl font-bold mb-4">Add Location</h3>
+            <input id="locationName" placeholder="Location Name (e.g., Ibadan HQ)" class="w-full border p-2 rounded mb-2">
+            <input id="locationCity" placeholder="City" class="w-full border p-2 rounded mb-2">
+            <input id="locationState" placeholder="State" class="w-full border p-2 rounded mb-2">
+            <textarea id="locationAddress" placeholder="Full Address" class="w-full border p-2 rounded mb-4" rows="3"></textarea>
+            <div class="flex gap-2">
+                <button id="saveLocationBtn" class="bg-blue-600 text-white px-4 py-2 rounded flex-1">Save</button>
+                <button id="closeLocationModal" class="bg-gray-400 px-4 py-2 rounded flex-1">Cancel</button>
+            </div>
         </div>
     </div>
 
     <!-- Product Modal -->
-    <div id="productModal" class="modal">
-        <div class="modal-content">
-            <h2>Add Product</h2>
-            <input type="text" id="productName" placeholder="Product Name" required>
-            <input type="text" id="productSku" placeholder="SKU/Code" required>
-            <input type="number" id="productQty" placeholder="Quantity" value="0" required>
-            <input type="number" id="productPrice" placeholder="Price" value="0" step="0.01" required>
-            <input type="number" id="productThreshold" placeholder="Low Stock Threshold" value="10" required>
-            <div class="modal-buttons">
-                <button onclick="saveProduct()">Save</button>
-                <button class="danger" onclick="closeModal('productModal')">Cancel</button>
+    <div id="productModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl max-w-md w-full p-5">
+            <h3 class="text-xl font-bold mb-4">Add Product</h3>
+            <input id="productName" placeholder="Product Name" class="w-full border p-2 rounded mb-2">
+            <input id="productSku" placeholder="SKU/Code" class="w-full border p-2 rounded mb-2">
+            <input id="productPrice" type="number" placeholder="Price per Unit" class="w-full border p-2 rounded mb-2">
+            <input id="productThreshold" type="number" placeholder="Low Stock Threshold" class="w-full border p-2 rounded mb-4" value="10">
+            <div class="flex gap-2">
+                <button id="saveProductBtn" class="bg-blue-600 text-white px-4 py-2 rounded flex-1">Save</button>
+                <button id="closeProductModal" class="bg-gray-400 px-4 py-2 rounded flex-1">Cancel</button>
             </div>
         </div>
     </div>
 
-    <!-- Delivery Modal -->
-    <div id="deliveryModal" class="modal">
-        <div class="modal-content">
-            <h2>Create Delivery</h2>
-            <select id="deliveryProduct" required>
+    <!-- Stock Update Modal (for adding stock at location) -->
+    <div id="stockModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl max-w-md w-full p-5">
+            <h3 class="text-xl font-bold mb-4">Update Stock</h3>
+            <p id="stockModalProduct" class="text-sm text-gray-600 mb-2"></p>
+            <select id="stockLocation" class="w-full border p-2 rounded mb-2">
+                <option>Select Location</option>
+            </select>
+            <input id="stockQuantity" type="number" placeholder="Quantity to Add" class="w-full border p-2 rounded mb-4">
+            <div class="flex gap-2">
+                <button id="saveStockBtn" class="bg-blue-600 text-white px-4 py-2 rounded flex-1">Save</button>
+                <button id="closeStockModal" class="bg-gray-400 px-4 py-2 rounded flex-1">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Transfer Modal -->
+    <div id="transferModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl max-w-md w-full p-5">
+            <h3 class="text-xl font-bold mb-4">Create Stock Transfer</h3>
+            <select id="transferProduct" class="w-full border p-2 rounded mb-2">
                 <option>Select Product</option>
             </select>
-            <input type="number" id="deliveryQty" placeholder="Quantity" value="1" required>
-            <input type="text" id="customerName" placeholder="Customer Name" required>
-            <input type="text" id="customerAddress" placeholder="Address" required>
-            <select id="deliveryStatus">
-                <option value="pending">Pending</option>
-                <option value="completed">Completed</option>
-                <option value="failed">Failed</option>
+            <select id="transferFrom" class="w-full border p-2 rounded mb-2">
+                <option>From Location</option>
             </select>
-            <div class="modal-buttons">
-                <button onclick="saveDelivery()">Save</button>
-                <button class="danger" onclick="closeModal('deliveryModal')">Cancel</button>
+            <select id="transferTo" class="w-full border p-2 rounded mb-2">
+                <option>To Location</option>
+            </select>
+            <input id="transferQuantity" type="number" placeholder="Quantity" class="w-full border p-2 rounded mb-4">
+            <div class="flex gap-2">
+                <button id="saveTransferBtn" class="bg-blue-600 text-white px-4 py-2 rounded flex-1">Transfer</button>
+                <button id="closeTransferModal" class="bg-gray-400 px-4 py-2 rounded flex-1">Cancel</button>
             </div>
         </div>
     </div>
 
     <script>
-        // Data Storage
-        let products = JSON.parse(localStorage.getItem('sf_products')) || [];
-        let deliveries = JSON.parse(localStorage.getItem('sf_deliveries')) || [];
+        // ============ LOCAL STORAGE DATA ============
+        let locations = JSON.parse(localStorage.getItem('stockflow_locations')) || [];
+        let products = JSON.parse(localStorage.getItem('stockflow_products')) || [];
+        let inventory = JSON.parse(localStorage.getItem('stockflow_inventory')) || {}; // { productId: { locationId: quantity } }
+        let transfers = JSON.parse(localStorage.getItem('stockflow_transfers')) || [];
 
-        // Save Data
-        function save() {
-            localStorage.setItem('sf_products', JSON.stringify(products));
-            localStorage.setItem('sf_deliveries', JSON.stringify(deliveries));
-            render();
+        // ============ SAVE TO LOCAL STORAGE ============
+        function saveData() {
+            localStorage.setItem('stockflow_locations', JSON.stringify(locations));
+            localStorage.setItem('stockflow_products', JSON.stringify(products));
+            localStorage.setItem('stockflow_inventory', JSON.stringify(inventory));
+            localStorage.setItem('stockflow_transfers', JSON.stringify(transfers));
+            updateDashboard();
+            renderLocations();
+            renderProducts();
+            renderTransfers();
         }
 
-        // Tab Switching
-        document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-                document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-                btn.classList.add('active');
-                document.getElementById(btn.dataset.tab).classList.add('active');
+        // ============ DASHBOARD ============
+        function updateDashboard() {
+            document.getElementById('totalProducts').innerText = products.length;
+            document.getElementById('totalLocations').innerText = locations.length;
+
+            // Calculate low stock items
+            let lowStockItems = [];
+            products.forEach(p => {
+                let totalQty = 0;
+                if (inventory[p.id]) {
+                    Object.values(inventory[p.id]).forEach(qty => totalQty += qty);
+                }
+                if (totalQty <= p.threshold) {
+                    lowStockItems.push(p);
+                }
             });
+            document.getElementById('lowStockAlert').innerText = lowStockItems.length;
+
+            // Calculate total value
+            let totalVal = 0;
+            products.forEach(p => {
+                let totalQty = 0;
+                if (inventory[p.id]) {
+                    Object.values(inventory[p.id]).forEach(qty => totalQty += qty);
+                }
+                totalVal += totalQty * p.price;
+            });
+            document.getElementById('totalValue').innerText = '$' + totalVal.toFixed(2);
+
+            // Stock by location
+            const stockByLocContainer = document.getElementById('stockByLocation');
+            if (locations.length === 0) {
+                stockByLocContainer.innerHTML = '<div class="text-gray-500">No locations added yet</div>';
+            } else {
+                stockByLocContainer.innerHTML = locations.map(loc => {
+                    let locTotal = 0;
+                    Object.keys(inventory).forEach(prodId => {
+                        if (inventory[prodId][loc.id]) {
+                            locTotal += inventory[prodId][loc.id];
+                        }
+                    });
+                    return `<div class="bg-gray-50 p-3 rounded flex justify-between">
+                        <span class="font-semibold">${loc.name} (${loc.city})</span>
+                        <span class="bg-blue-200 text-blue-800 px-3 py-1 rounded-full">${locTotal} units</span>
+                    </div>`;
+                }).join('');
+            }
+
+            // Low stock alerts
+            const lowStockContainer = document.getElementById('lowStockList');
+            if (lowStockItems.length === 0) {
+                lowStockContainer.innerHTML = '<div class="text-gray-500">✅ All stock levels healthy</div>';
+            } else {
+                lowStockContainer.innerHTML = lowStockItems.map(p => {
+                    let details = '';
+                    if (inventory[p.id]) {
+                        details = locations.map(loc => {
+                            const qty = inventory[p.id][loc.id] || 0;
+                            return `<span class="text-xs bg-gray-200 px-2 py-1 rounded">${loc.city}: ${qty}</span>`;
+                        }).join(' ');
+                    }
+                    return `<div class="bg-red-50 p-3 rounded"><div class="font-bold mb-2">⚠️ ${p.name}</div><div class="flex gap-2 flex-wrap">${details}</div></div>`;
+                }).join('');
+            }
+
+            document.getElementById('totalItems').innerText = `Items: ${Object.keys(inventory).reduce((sum, prodId) => {
+                let qty = 0;
+                if (inventory[prodId]) Object.values(inventory[prodId]).forEach(q => qty += q);
+                return sum + qty;
+            }, 0)}`;
+        }
+
+        // ============ LOCATIONS ============
+        function renderLocations() {
+            const search = document.getElementById('searchLocation')?.value.toLowerCase() || '';
+            let filtered = locations.filter(l => 
+                l.name.toLowerCase().includes(search) || l.city.toLowerCase().includes(search)
+            );
+
+            const container = document.getElementById('locationsList');
+            if (filtered.length === 0) {
+                container.innerHTML = '<div class="text-center p-4 bg-white rounded">No locations found</div>';
+                return;
+            }
+
+            container.innerHTML = filtered.map(loc => {
+                let locTotal = 0;
+                Object.keys(inventory).forEach(prodId => {
+                    if (inventory[prodId][loc.id]) {
+                        locTotal += inventory[prodId][loc.id];
+                    }
+                });
+                return `
+                    <div class="bg-white p-4 rounded-xl shadow">
+                        <div class="flex justify-between items-start mb-2">
+                            <div>
+                                <h3 class="font-bold text-lg">${loc.name}</h3>
+                                <p class="text-sm text-gray-600">📍 ${loc.city}, ${loc.state}</p>
+                                <p class="text-xs text-gray-500">${loc.address}</p>
+                            </div>
+                            <button class="delete-location text-red-600 font-bold" data-id="${loc.id}">✕</button>
+                        </div>
+                        <div class="bg-blue-100 text-blue-800 px-3 py-2 rounded mb-2 text-center font-bold">
+                            Total Stock: ${locTotal} units
+                        </div>
+                        <div class="flex gap-2">
+                            <button class="edit-location flex-1 bg-blue-500 text-white px-3 py-1 rounded text-sm" data-id="${loc.id}">✏️ Edit</button>
+                            <button class="view-location flex-1 bg-gray-600 text-white px-3 py-1 rounded text-sm" data-id="${loc.id}">👁️ View Stock</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            document.querySelectorAll('.delete-location').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    if (confirm('Delete this location?')) {
+                        locations = locations.filter(l => l.id !== btn.dataset.id);
+                        saveData();
+                    }
+                });
+            });
+        }
+
+        document.getElementById('addLocationBtn').addEventListener('click', () => {
+            document.getElementById('locationName').value = '';
+            document.getElementById('locationCity').value = '';
+            document.getElementById('locationState').value = '';
+            document.getElementById('locationAddress').value = '';
+            window._editLocationId = null;
+            document.getElementById('locationModal').classList.remove('hidden');
         });
 
-        // Update Dashboard
-        function updateDashboard() {
-            document.getElementById('totalProductsNum').textContent = products.length;
-            const lowStock = products.filter(p => p.qty <= p.threshold).length;
-            document.getElementById('lowStockNum').textContent = lowStock;
-            document.getElementById('totalItemsNum').textContent = products.reduce((sum, p) => sum + p.qty, 0);
-            document.getElementById('deliveriesNum').textContent = deliveries.length;
+        document.getElementById('saveLocationBtn').addEventListener('click', () => {
+            const name = document.getElementById('locationName').value.trim();
+            const city = document.getElementById('locationCity').value.trim();
+            const state = document.getElementById('locationState').value.trim();
+            const address = document.getElementById('locationAddress').value.trim();
 
-            const alerts = products.filter(p => p.qty <= p.threshold);
-            if (alerts.length === 0) {
-                document.getElementById('lowStockAlerts').innerHTML = '<p>✅ All stock levels healthy</p>';
-            } else {
-                document.getElementById('lowStockAlerts').innerHTML = alerts.map(p =>
-                    `<div style="padding: 10px; background: #ffe0e0; border-radius: 5px; margin-bottom: 10px;">
-                        <strong>${p.name}</strong> - Stock: ${p.qty}/${p.threshold}
-                    </div>`
-                ).join('');
-            }
-        }
+            if (!name || !city || !state) { alert('Name, City, and State required'); return; }
 
-        // Render Products
+            locations.push({
+                id: Date.now().toString(),
+                name, city, state, address
+            });
+            saveData();
+            document.getElementById('locationModal').classList.add('hidden');
+        });
+
+        document.getElementById('closeLocationModal').addEventListener('click', () => {
+            document.getElementById('locationModal').classList.add('hidden');
+        });
+
+        document.getElementById('searchLocation').addEventListener('input', renderLocations);
+
+        // ============ PRODUCTS ============
         function renderProducts() {
-            const search = document.getElementById('searchProducts').value.toLowerCase();
-            const filtered = products.filter(p => p.name.toLowerCase().includes(search) || p.sku.toLowerCase().includes(search));
-            const html = filtered.map(p => `
-                <div class="product-item ${p.qty <= p.threshold ? 'low-stock' : ''}">
-                    <h4>${p.name}</h4>
-                    <p>SKU: ${p.sku} | Stock: <strong>${p.qty}</strong> | Price: $${p.price.toFixed(2)}</p>
-                    <div class="product-actions">
-                        <button onclick="editProduct('${p.id}')">✏️ Edit</button>
-                        <button onclick="addStock('${p.id}')" class="success">➕ Add</button>
-                        <button onclick="removeStock('${p.id}')">➖ Remove</button>
-                        <button onclick="deleteProduct('${p.id}')" class="danger">🗑️ Delete</button>
+            const search = document.getElementById('searchProduct')?.value.toLowerCase() || '';
+            let filtered = products.filter(p => 
+                p.name.toLowerCase().includes(search) || p.sku.toLowerCase().includes(search)
+            );
+
+            const container = document.getElementById('productsList');
+            if (filtered.length === 0) {
+                container.innerHTML = '<div class="text-center p-4 bg-white rounded">No products found</div>';
+                return;
+            }
+
+            container.innerHTML = filtered.map(p => {
+                let totalQty = 0;
+                let locationBreakdown = '';
+                if (inventory[p.id]) {
+                    locations.forEach(loc => {
+                        const qty = inventory[p.id][loc.id] || 0;
+                        totalQty += qty;
+                        const statusClass = qty <= p.threshold ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800';
+                        locationBreakdown += `<span class="${statusClass} text-xs px-2 py-1 rounded">${loc.city}: ${qty}</span> `;
+                    });
+                } else {
+                    locations.forEach(loc => {
+                        locationBreakdown += `<span class="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded">${loc.city}: 0</span> `;
+                    });
+                }
+                
+                return `
+                    <div class="bg-white p-4 rounded-xl shadow">
+                        <div class="flex justify-between items-start mb-2">
+                            <div>
+                                <h3 class="font-bold text-lg">${p.name}</h3>
+                                <p class="text-xs text-gray-500">SKU: ${p.sku}</p>
+                            </div>
+                            <button class="delete-product text-red-600 font-bold" data-id="${p.id}">✕</button>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 mb-3">
+                            <div class="bg-blue-50 p-2 rounded">
+                                <p class="text-xs text-gray-600">Total Stock</p>
+                                <p class="text-lg font-bold">${totalQty}</p>
+                            </div>
+                            <div class="bg-gray-50 p-2 rounded">
+                                <p class="text-xs text-gray-600">Unit Price</p>
+                                <p class="text-lg font-bold">$${p.price.toFixed(2)}</p>
+                            </div>
+                        </div>
+                        <div class="mb-3 flex gap-1 flex-wrap">
+                            ${locationBreakdown}
+                        </div>
+                        <div class="flex gap-2">
+                            <button class="add-stock flex-1 bg-green-500 text-white px-3 py-1 rounded text-sm" data-id="${p.id}">➕ Add Stock</button>
+                            <button class="edit-product flex-1 bg-blue-500 text-white px-3 py-1 rounded text-sm" data-id="${p.id}">✏️ Edit</button>
+                        </div>
                     </div>
-                </div>
-            `).join('');
-            document.getElementById('productsList').innerHTML = html || '<p>No products. Add one to get started!</p>';
+                `;
+            }).join('');
+
+            document.querySelectorAll('.delete-product').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    if (confirm('Delete this product?')) {
+                        const prodId = btn.dataset.id;
+                        products = products.filter(p => p.id !== prodId);
+                        delete inventory[prodId];
+                        saveData();
+                    }
+                });
+            });
+
+            document.querySelectorAll('.add-stock').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    window._stockProductId = btn.dataset.id;
+                    const prod = products.find(p => p.id === window._stockProductId);
+                    document.getElementById('stockModalProduct').innerText = `Add stock for: ${prod.name}`;
+                    
+                    const select = document.getElementById('stockLocation');
+                    select.innerHTML = '<option>Select Location</option>' + 
+                        locations.map(l => `<option value="${l.id}">${l.name} (${l.city})</option>`).join('');
+                    
+                    document.getElementById('stockQuantity').value = '';
+                    document.getElementById('stockModal').classList.remove('hidden');
+                });
+            });
         }
 
-        // Render Deliveries
-        function renderDeliveries() {
-            const html = deliveries.map(d => `
-                <div class="delivery-item">
-                    <h4>${d.product} × ${d.qty}</h4>
-                    <p>Customer: <strong>${d.customer}</strong></p>
-                    <p>Address: ${d.address}</p>
-                    <p>Status: <select onchange="updateDeliveryStatus('${d.id}', this.value)">
-                        <option value="pending" ${d.status === 'pending' ? 'selected' : ''}>Pending</option>
-                        <option value="completed" ${d.status === 'completed' ? 'selected' : ''}>Completed</option>
-                        <option value="failed" ${d.status === 'failed' ? 'selected' : ''}>Failed</option>
-                    </select></p>
-                    <button onclick="deleteDelivery('${d.id}')" class="danger">Delete</button>
-                </div>
-            `).join('');
-            document.getElementById('deliveriesList').innerHTML = html || '<p>No deliveries yet.</p>';
-        }
-
-        // Render All
-        function render() {
-            updateDashboard();
-            renderProducts();
-            renderDeliveries();
-        }
-
-        // Product Functions
-        function openProductModal() {
+        document.getElementById('addProductBtn').addEventListener('click', () => {
             document.getElementById('productName').value = '';
             document.getElementById('productSku').value = '';
-            document.getElementById('productQty').value = '0';
-            document.getElementById('productPrice').value = '0';
+            document.getElementById('productPrice').value = '';
             document.getElementById('productThreshold').value = '10';
-            window.editingId = null;
-            document.getElementById('productModal').classList.add('active');
-        }
+            window._editProductId = null;
+            document.getElementById('productModal').classList.remove('hidden');
+        });
 
-        function saveProduct() {
+        document.getElementById('saveProductBtn').addEventListener('click', () => {
             const name = document.getElementById('productName').value.trim();
             const sku = document.getElementById('productSku').value.trim();
-            const qty = parseInt(document.getElementById('productQty').value) || 0;
             const price = parseFloat(document.getElementById('productPrice').value) || 0;
             const threshold = parseInt(document.getElementById('productThreshold').value) || 10;
 
             if (!name || !sku) { alert('Name and SKU required'); return; }
 
-            if (window.editingId) {
-                const p = products.find(x => x.id === window.editingId);
-                if (p) { p.name = name; p.sku = sku; p.qty = qty; p.price = price; p.threshold = threshold; }
-            } else {
-                products.push({ id: Date.now().toString(), name, sku, qty, price, threshold });
+            const productId = Date.now().toString();
+            products.push({ id: productId, name, sku, price, threshold });
+            inventory[productId] = {};
+            locations.forEach(loc => {
+                inventory[productId][loc.id] = 0;
+            });
+            saveData();
+            document.getElementById('productModal').classList.add('hidden');
+        });
+
+        document.getElementById('closeProductModal').addEventListener('click', () => {
+            document.getElementById('productModal').classList.add('hidden');
+        });
+
+        document.getElementById('searchProduct').addEventListener('input', renderProducts);
+
+        // ============ STOCK UPDATE ============
+        document.getElementById('saveStockBtn').addEventListener('click', () => {
+            const prodId = window._stockProductId;
+            const locId = document.getElementById('stockLocation').value;
+            const qty = parseInt(document.getElementById('stockQuantity').value) || 0;
+
+            if (!locId || locId === 'Select Location' || !qty || qty <= 0) {
+                alert('Select location and enter valid quantity');
+                return;
             }
-            save();
-            closeModal('productModal');
-        }
 
-        function editProduct(id) {
-            const p = products.find(x => x.id === id);
-            if (p) {
-                document.getElementById('productName').value = p.name;
-                document.getElementById('productSku').value = p.sku;
-                document.getElementById('productQty').value = p.qty;
-                document.getElementById('productPrice').value = p.price;
-                document.getElementById('productThreshold').value = p.threshold;
-                window.editingId = id;
-                document.getElementById('productModal').classList.add('active');
+            if (!inventory[prodId]) inventory[prodId] = {};
+            inventory[prodId][locId] = (inventory[prodId][locId] || 0) + qty;
+
+            saveData();
+            document.getElementById('stockModal').classList.add('hidden');
+        });
+
+        document.getElementById('closeStockModal').addEventListener('click', () => {
+            document.getElementById('stockModal').classList.add('hidden');
+        });
+
+        // ============ TRANSFERS ============
+        function renderTransfers() {
+            const search = document.getElementById('searchTransfer')?.value.toLowerCase() || '';
+            let filtered = transfers.filter(t => {
+                const prod = products.find(p => p.id === t.productId);
+                const fromLoc = locations.find(l => l.id === t.fromLocationId);
+                return (prod?.name.toLowerCase().includes(search) || fromLoc?.name.toLowerCase().includes(search)) || false;
+            });
+
+            const container = document.getElementById('transfersList');
+            if (filtered.length === 0) {
+                container.innerHTML = '<div class="text-center p-4 bg-white rounded">No transfers found</div>';
+                return;
             }
+
+            container.innerHTML = filtered.map(t => {
+                const prod = products.find(p => p.id === t.productId);
+                const fromLoc = locations.find(l => l.id === t.fromLocationId);
+                const toLoc = locations.find(l => l.id === t.toLocationId);
+                const date = new Date(t.date).toLocaleDateString();
+
+                return `
+                    <div class="bg-white p-4 rounded-xl shadow">
+                        <div class="flex justify-between items-start mb-2">
+                            <div>
+                                <h3 class="font-bold">${prod?.name} × ${t.quantity}</h3>
+                                <p class="text-sm text-gray-600">🔄 ${fromLoc?.city} → ${toLoc?.city}</p>
+                            </div>
+                            <span class="text-xs bg-blue-200 text-blue-800 px-2 py-1 rounded">${date}</span>
+                        </div>
+                        <button class="delete-transfer w-full bg-red-500 text-white px-3 py-1 rounded text-sm" data-id="${t.id}">🗑️ Delete</button>
+                    </div>
+                `;
+            }).join('');
+
+            document.querySelectorAll('.delete-transfer').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    if (confirm('Delete this transfer?')) {
+                        transfers = transfers.filter(t => t.id !== btn.dataset.id);
+                        saveData();
+                    }
+                });
+            });
         }
 
-        function deleteProduct(id) {
-            if (confirm('Delete this product?')) {
-                products = products.filter(p => p.id !== id);
-                save();
+        document.getElementById('addTransferBtn').addEventListener('click', () => {
+            if (products.length === 0) { alert('Add products first'); return; }
+            if (locations.length < 2) { alert('Add at least 2 locations first'); return; }
+
+            const prodSelect = document.getElementById('transferProduct');
+            prodSelect.innerHTML = '<option>Select Product</option>' + 
+                products.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+
+            const fromSelect = document.getElementById('transferFrom');
+            fromSelect.innerHTML = '<option>From Location</option>' + 
+                locations.map(l => `<option value="${l.id}">${l.name} (${l.city})</option>`).join('');
+
+            const toSelect = document.getElementById('transferTo');
+            toSelect.innerHTML = '<option>To Location</option>' + 
+                locations.map(l => `<option value="${l.id}">${l.name} (${l.city})</option>`).join('');
+
+            document.getElementById('transferQuantity').value = '';
+            document.getElementById('transferModal').classList.remove('hidden');
+        });
+
+        document.getElementById('saveTransferBtn').addEventListener('click', () => {
+            const prodId = document.getElementById('transferProduct').value;
+            const fromId = document.getElementById('transferFrom').value;
+            const toId = document.getElementById('transferTo').value;
+            const qty = parseInt(document.getElementById('transferQuantity').value) || 0;
+
+            if (!prodId || !fromId || !toId || !qty || qty <= 0) {
+                alert('Fill all fields');
+                return;
             }
-        }
 
-        function addStock(id) {
-            const p = products.find(x => x.id === id);
-            if (p) { p.qty++; save(); }
-        }
+            if (fromId === toId) {
+                alert('From and To locations must be different');
+                return;
+            }
 
-        function removeStock(id) {
-            const p = products.find(x => x.id === id);
-            if (p && p.qty > 0) { p.qty--; save(); }
-        }
+            // Check if source has enough stock
+            if (!inventory[prodId] || (inventory[prodId][fromId] || 0) < qty) {
+                alert('Not enough stock at source location');
+                return;
+            }
 
-        // Delivery Functions
-        function openDeliveryModal() {
-            const select = document.getElementById('deliveryProduct');
-            select.innerHTML = '<option>Select Product</option>' + products.map(p => `<option value="${p.id}">${p.name} (${p.qty} in stock)</option>`).join('');
-            document.getElementById('deliveryQty').value = '1';
-            document.getElementById('customerName').value = '';
-            document.getElementById('customerAddress').value = '';
-            document.getElementById('deliveryStatus').value = 'pending';
-            document.getElementById('deliveryModal').classList.add('active');
-        }
+            // Transfer stock
+            inventory[prodId][fromId] -= qty;
+            inventory[prodId][toId] = (inventory[prodId][toId] || 0) + qty;
 
-        function saveDelivery() {
-            const productId = document.getElementById('deliveryProduct').value;
-            const qty = parseInt(document.getElementById('deliveryQty').value) || 1;
-            const customer = document.getElementById('customerName').value.trim();
-            const address = document.getElementById('customerAddress').value.trim();
-            const status = document.getElementById('deliveryStatus').value;
-
-            if (productId === 'Select Product' || !customer) { alert('All fields required'); return; }
-
-            const product = products.find(p => p.id === productId);
-            if (!product) { alert('Product not found'); return; }
-            if (product.qty < qty) { alert('Not enough stock'); return; }
-
-            product.qty -= qty;
-            deliveries.push({
+            // Record transfer
+            transfers.push({
                 id: Date.now().toString(),
-                product: product.name,
-                qty,
-                customer,
-                address,
-                status,
+                productId: prodId,
+                fromLocationId: fromId,
+                toLocationId: toId,
+                quantity: qty,
                 date: new Date().toISOString()
             });
-            save();
-            closeModal('deliveryModal');
-        }
 
-        function updateDeliveryStatus(id, status) {
-            const d = deliveries.find(x => x.id === id);
-            if (d) { d.status = status; save(); }
-        }
+            saveData();
+            document.getElementById('transferModal').classList.add('hidden');
+        });
 
-        function deleteDelivery(id) {
-            if (confirm('Delete delivery?')) {
-                deliveries = deliveries.filter(d => d.id !== id);
-                save();
-            }
-        }
+        document.getElementById('closeTransferModal').addEventListener('click', () => {
+            document.getElementById('transferModal').classList.add('hidden');
+        });
 
-        // Utilities
-        function closeModal(id) {
-            document.getElementById(id).classList.remove('active');
-        }
+        document.getElementById('searchTransfer').addEventListener('input', renderTransfers);
 
-        function exportProducts() {
-            if (products.length === 0) { alert('No products to export'); return; }
-            let csv = 'Product Name,SKU,Quantity,Price,Threshold\n';
-            csv += products.map(p => `"${p.name}","${p.sku}",${p.qty},${p.price},${p.threshold}`).join('\n');
-            const blob = new Blob([csv], { type: 'text/csv' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'stockflow-products.csv';
-            a.click();
-        }
+        // ============ TAB SWITCHING ============
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tab = btn.dataset.tab;
+                document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
+                document.getElementById(tab + 'Tab').classList.remove('hidden');
+                document.querySelectorAll('.tab-btn').forEach(b => {
+                    b.classList.remove('bg-blue-600', 'text-white');
+                    b.classList.add('bg-gray-200', 'text-gray-700');
+                });
+                btn.classList.remove('bg-gray-200', 'text-gray-700');
+                btn.classList.add('bg-blue-600', 'text-white');
+            });
+        });
 
-        function clearAll() {
-            if (confirm('⚠️ Delete ALL data? This cannot be undone!')) {
+        // ============ EXPORT ============
+        document.getElementById('exportProductsBtn').addEventListener('click', () => {
+            let data = [];
+            products.forEach(p => {
+                let row = { 'Product': p.name, 'SKU': p.sku, 'Price': p.price };
+                let total = 0;
+                locations.forEach(l => {
+                    const qty = (inventory[p.id]?.[l.id]) || 0;
+                    row[l.city] = qty;
+                    total += qty;
+                });
+                row['Total'] = total;
+                data.push(row);
+            });
+            const ws = XLSX.utils.json_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Inventory');
+            XLSX.writeFile(wb, 'stockflow-inventory.xlsx');
+        });
+
+        // ============ CLEAR ALL ============
+        document.getElementById('clearAllBtn').addEventListener('click', () => {
+            if (confirm('⚠️ This will delete ALL data. Are you sure?')) {
+                locations = [];
                 products = [];
-                deliveries = [];
-                save();
+                inventory = {};
+                transfers = [];
+                saveData();
             }
-        }
+        });
 
-        // Search
-        document.getElementById('searchProducts').addEventListener('input', renderProducts);
-
-        // Init
-        render();
+        // ============ INITIALIZE ============
+        updateDashboard();
+        renderLocations();
+        renderProducts();
+        renderTransfers();
     </script>
 </body>
 </html>
