@@ -167,7 +167,7 @@
             } else {
                 document.getElementById('lowStockAlerts').innerHTML = alerts.map(p =>
                     `<div style="padding: 10px; background: #ffe0e0; border-radius: 5px; margin-bottom: 10px;">
-                        <strong>${p.name}</strong> - Stock: ${p.qty}/${p.threshold}
+                        <strong>#{p.name}</strong> - Stock: #{p.qty}/#{p.threshold}
                     </div>`
                 ).join('');
             }
@@ -178,14 +178,14 @@
             const search = document.getElementById('searchProducts').value.toLowerCase();
             const filtered = products.filter(p => p.name.toLowerCase().includes(search) || p.sku.toLowerCase().includes(search));
             const html = filtered.map(p => `
-                <div class="product-item ${p.qty <= p.threshold ? 'low-stock' : ''}">
-                    <h4>${p.name}</h4>
-                    <p>SKU: ${p.sku} | Stock: <strong>${p.qty}</strong> | Price: $${p.price.toFixed(2)}</p>
+                <div class="product-item #{p.qty <= p.threshold ? 'low-stock' : ''}">
+                    <h4>#{p.name}</h4>
+                    <p>SKU: #{p.sku} | Stock: <strong>#{p.qty}</strong> | Price: ##{p.price.toFixed(2)}</p>
                     <div class="product-actions">
-                        <button onclick="editProduct('${p.id}')">✏️ Edit</button>
-                        <button onclick="addStock('${p.id}')" class="success">➕ Add</button>
-                        <button onclick="removeStock('${p.id}')">➖ Remove</button>
-                        <button onclick="deleteProduct('${p.id}')" class="danger">🗑️ Delete</button>
+                        <button onclick="editProduct('#{p.id}')">✏️ Edit</button>
+                        <button onclick="addStock('#{p.id}')" class="success">➕ Add</button>
+                        <button onclick="removeStock('#{p.id}')">➖ Remove</button>
+                        <button onclick="deleteProduct('#{p.id}')" class="danger">🗑️ Delete</button>
                     </div>
                 </div>
             `).join('');
@@ -196,15 +196,15 @@
         function renderDeliveries() {
             const html = deliveries.map(d => `
                 <div class="delivery-item">
-                    <h4>${d.product} × ${d.qty}</h4>
-                    <p>Customer: <strong>${d.customer}</strong></p>
-                    <p>Address: ${d.address}</p>
-                    <p>Status: <select onchange="updateDeliveryStatus('${d.id}', this.value)">
-                        <option value="pending" ${d.status === 'pending' ? 'selected' : ''}>Pending</option>
-                        <option value="completed" ${d.status === 'completed' ? 'selected' : ''}>Completed</option>
-                        <option value="failed" ${d.status === 'failed' ? 'selected' : ''}>Failed</option>
+                    <h4>#{d.product} × #{d.qty}</h4>
+                    <p>Customer: <strong>#{d.customer}</strong></p>
+                    <p>Address: #{d.address}</p>
+                    <p>Status: <select onchange="updateDeliveryStatus('#{d.id}', this.value)">
+                        <option value="pending" #{d.status === 'pending' ? 'selected' : ''}>Pending</option>
+                        <option value="completed" #{d.status === 'completed' ? 'selected' : ''}>Completed</option>
+                        <option value="failed" #{d.status === 'failed' ? 'selected' : ''}>Failed</option>
                     </select></p>
-                    <button onclick="deleteDelivery('${d.id}')" class="danger">Delete</button>
+                    <button onclick="deleteDelivery('#{d.id}')" class="danger">Delete</button>
                 </div>
             `).join('');
             document.getElementById('deliveriesList').innerHTML = html || '<p>No deliveries yet.</p>';
@@ -280,7 +280,7 @@
         // Delivery Functions
         function openDeliveryModal() {
             const select = document.getElementById('deliveryProduct');
-            select.innerHTML = '<option>Select Product</option>' + products.map(p => `<option value="${p.id}">${p.name} (${p.qty} in stock)</option>`).join('');
+            select.innerHTML = '<option>Select Product</option>' + products.map(p => `<option value="#{p.id}">#{p.name} (#{p.qty} in stock)</option>`).join('');
             document.getElementById('deliveryQty').value = '1';
             document.getElementById('customerName').value = '';
             document.getElementById('customerAddress').value = '';
@@ -335,7 +335,7 @@
         function exportProducts() {
             if (products.length === 0) { alert('No products to export'); return; }
             let csv = 'Product Name,SKU,Quantity,Price,Threshold\n';
-            csv += products.map(p => `"${p.name}","${p.sku}",${p.qty},${p.price},${p.threshold}`).join('\n');
+            csv += products.map(p => `"#{p.name}","#{p.sku}",#{p.qty},#{p.price},#{p.threshold}`).join('\n');
             const blob = new Blob([csv], { type: 'text/csv' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
