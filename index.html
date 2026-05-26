@@ -33,7 +33,7 @@
 
     <!-- Main App Container -->
     <div id="app" class="max-w-7xl mx-auto px-3 py-4 pb-20">
-
+        
         <!-- Top bar -->
         <div class="flex justify-between items-center bg-white p-4 rounded-xl shadow mb-4">
             <div>
@@ -178,7 +178,7 @@
     <div id="deliveryModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-xl max-w-md w-full p-5 max-h-[90vh] overflow-y-auto">
             <h3 class="text-xl font-bold mb-4" id="deliveryModalTitle">Record Delivery</h3>
-
+            
             <label class="block text-sm font-semibold mb-2">Select Location</label>
             <select id="deliveryLocation" class="w-full border p-2 rounded mb-4">
                 <option>Select Location</option>
@@ -219,7 +219,7 @@
     <div id="transferModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-xl max-w-md w-full p-5">
             <h3 class="text-xl font-bold mb-4" id="transferModalTitle">Transfer Stock</h3>
-
+            
             <label class="block text-sm font-semibold mb-2">Select Product</label>
             <select id="transferProduct" class="w-full border p-2 rounded mb-4">
                 <option>Select Product</option>
@@ -356,7 +356,7 @@
         // ============ LOCATIONS ============
         function renderLocations() {
             const search = document.getElementById('searchLocation')?.value.toLowerCase() || '';
-            let filtered = locations.filter(l =>
+            let filtered = locations.filter(l => 
                 l.name.toLowerCase().includes(search) || l.city.toLowerCase().includes(search)
             );
 
@@ -436,7 +436,7 @@
         // ============ PRODUCTS ============
         function renderProducts() {
             const search = document.getElementById('searchProduct')?.value.toLowerCase() || '';
-            let filtered = products.filter(p =>
+            let filtered = products.filter(p => 
                 p.name.toLowerCase().includes(search) || p.sku.toLowerCase().includes(search)
             );
 
@@ -461,7 +461,7 @@
                         locationBreakdown += `<span class="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded">${loc.city}: 0</span> `;
                     });
                 }
-
+                
                 return `
                     <div class="bg-white p-4 rounded-xl shadow">
                         <div class="flex justify-between items-start mb-2">
@@ -508,11 +508,11 @@
                     window._stockProductId = btn.dataset.id;
                     const prod = products.find(p => p.id === window._stockProductId);
                     document.getElementById('stockModalProduct').innerText = `Add stock for: ${prod.name}`;
-
+                    
                     const select = document.getElementById('stockLocation');
-                    select.innerHTML = '<option>Select Location</option>' +
+                    select.innerHTML = '<option>Select Location</option>' + 
                         locations.map(l => `<option value="${l.id}">${l.name} (${l.city})</option>`).join('');
-
+                    
                     document.getElementById('stockQuantity').value = '';
                     document.getElementById('stockModal').classList.remove('hidden');
                 });
@@ -578,8 +578,8 @@
         // ============ DELIVERIES ============
         function renderDeliveries() {
             const search = document.getElementById('searchDelivery')?.value.toLowerCase() || '';
-            let filtered = deliveries.filter(d =>
-                d.customerName.toLowerCase().includes(search) ||
+            let filtered = deliveries.filter(d => 
+                d.customerName.toLowerCase().includes(search) || 
                 d.productName.toLowerCase().includes(search)
             );
 
@@ -668,7 +668,7 @@
             document.getElementById('deliveryStatus').value = 'pending';
 
             const locSelect = document.getElementById('deliveryLocation');
-            locSelect.innerHTML = '<option>Select Location</option>' +
+            locSelect.innerHTML = '<option>Select Location</option>' + 
                 locations.map(l => `<option value="${l.id}">${l.name} (${l.city})</option>`).join('');
 
             document.getElementById('deliveryModal').classList.remove('hidden');
@@ -677,7 +677,7 @@
         document.getElementById('deliveryProduct').addEventListener('change', () => {
             const prodId = document.getElementById('deliveryProduct').value;
             const locId = document.getElementById('deliveryLocation').value;
-
+            
             if (prodId && prodId !== 'Select Product' && locId && locId !== 'Select Location') {
                 const stock = inventory[prodId]?.[locId] || 0;
                 document.getElementById('currentStockDisplay').value = stock;
@@ -687,7 +687,7 @@
         document.getElementById('deliveryLocation').addEventListener('change', () => {
             const prodId = document.getElementById('deliveryProduct').value;
             const locId = document.getElementById('deliveryLocation').value;
-
+            
             if (prodId && prodId !== 'Select Product' && locId && locId !== 'Select Location') {
                 const stock = inventory[prodId]?.[locId] || 0;
                 document.getElementById('currentStockDisplay').value = stock;
@@ -708,25 +708,25 @@
             }
 
             const currentStock = inventory[prodId]?.[locId] || 0;
-
+            
             // Editing existing delivery
             if (window._editDeliveryIndex !== null && window._editDeliveryIndex !== undefined) {
                 const oldDelivery = deliveries[window._editDeliveryIndex];
                 const oldQty = oldDelivery.quantityDelivered;
-
+                
                 // Restore old qty
                 inventory[oldDelivery.productId][oldDelivery.locationId] += oldQty;
-
+                
                 // Check if enough stock for new qty
                 const availableStock = inventory[prodId][locId];
                 if (qty > availableStock) {
                     alert(`Not enough stock! Available: ${availableStock}`);
                     return;
                 }
-
+                
                 // Deduct new qty
                 inventory[prodId][locId] -= qty;
-
+                
                 deliveries[window._editDeliveryIndex] = {
                     id: oldDelivery.id,
                     productId: prodId,
@@ -775,7 +775,7 @@
         // ============ TRANSFERS ============
         function renderTransfers() {
             const search = document.getElementById('searchTransfer')?.value.toLowerCase() || '';
-            let filtered = transfers.filter(t =>
+            let filtered = transfers.filter(t => 
                 t.productName.toLowerCase().includes(search) ||
                 t.fromLocation.toLowerCase().includes(search) ||
                 t.toLocation.toLowerCase().includes(search)
@@ -849,15 +849,15 @@
             document.getElementById('transferQuantity').value = '';
 
             const prodSelect = document.getElementById('transferProduct');
-            prodSelect.innerHTML = '<option>Select Product</option>' +
+            prodSelect.innerHTML = '<option>Select Product</option>' + 
                 products.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
 
             const fromSelect = document.getElementById('transferFrom');
-            fromSelect.innerHTML = '<option>Select Location</option>' +
+            fromSelect.innerHTML = '<option>Select Location</option>' + 
                 locations.map(l => `<option value="${l.id}">${l.name} (${l.city})</option>`).join('');
 
             const toSelect = document.getElementById('transferTo');
-            toSelect.innerHTML = '<option>Select Location</option>' +
+            toSelect.innerHTML = '<option>Select Location</option>' + 
                 locations.map(l => `<option value="${l.id}">${l.name} (${l.city})</option>`).join('');
 
             document.getElementById('transferModal').classList.remove('hidden');
@@ -866,7 +866,7 @@
         document.getElementById('transferProduct').addEventListener('change', () => {
             const prodId = document.getElementById('transferProduct').value;
             const fromLocId = document.getElementById('transferFrom').value;
-
+            
             if (prodId && prodId !== 'Select Product' && fromLocId && fromLocId !== 'Select Location') {
                 const stock = inventory[prodId]?.[fromLocId] || 0;
                 document.getElementById('transferFromStock').value = stock;
@@ -876,7 +876,7 @@
         document.getElementById('transferFrom').addEventListener('change', () => {
             const prodId = document.getElementById('transferProduct').value;
             const fromLocId = document.getElementById('transferFrom').value;
-
+            
             if (prodId && prodId !== 'Select Product' && fromLocId && fromLocId !== 'Select Location') {
                 const stock = inventory[prodId]?.[fromLocId] || 0;
                 document.getElementById('transferFromStock').value = stock;
@@ -889,7 +889,7 @@
             const toLocId = document.getElementById('transferTo').value;
             const qty = parseInt(document.getElementById('transferQuantity').value) || 0;
 
-            if (!prodId || prodId === 'Select Product' || !fromLocId || fromLocId === 'Select Location' ||
+            if (!prodId || prodId === 'Select Product' || !fromLocId || fromLocId === 'Select Location' || 
                 !toLocId || toLocId === 'Select Location' || !qty || qty <= 0) {
                 alert('Complete all fields');
                 return;
@@ -901,29 +901,29 @@
             }
 
             const availableStock = inventory[prodId]?.[fromLocId] || 0;
-
+            
             // Editing existing transfer
             if (window._editTransferIndex !== null && window._editTransferIndex !== undefined) {
                 const oldTransfer = transfers[window._editTransferIndex];
                 // Reverse old transfer
                 inventory[oldTransfer.productId][oldTransfer.fromLocationId] += oldTransfer.quantity;
                 inventory[oldTransfer.productId][oldTransfer.toLocationId] -= oldTransfer.quantity;
-
+                
                 // Check new qty
                 const newAvailable = inventory[prodId][fromLocId];
                 if (qty > newAvailable) {
                     alert(`Not enough stock! Available: ${newAvailable}`);
                     return;
                 }
-
+                
                 // Apply new transfer
                 inventory[prodId][fromLocId] -= qty;
                 inventory[prodId][toLocId] = (inventory[prodId][toLocId] || 0) + qty;
-
+                
                 const prod = products.find(p => p.id === prodId);
                 const fromLoc = locations.find(l => l.id === fromLocId);
                 const toLoc = locations.find(l => l.id === toLocId);
-
+                
                 transfers[window._editTransferIndex] = {
                     id: oldTransfer.id,
                     productId: prodId,
