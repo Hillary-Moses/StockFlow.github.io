@@ -47,11 +47,12 @@
         </div>
 
         <!-- Tab Navigation -->
-        <div class="grid grid-cols-4 gap-2 mb-6 bg-white p-2 rounded-xl shadow overflow-x-auto">
+        <div class="grid grid-cols-5 gap-2 mb-6 bg-white p-2 rounded-xl shadow overflow-x-auto">
             <button data-tab="dashboard" class="tab-btn py-3 rounded-xl font-semibold bg-blue-600 text-white whitespace-nowrap">📊 Dashboard</button>
             <button data-tab="locations" class="tab-btn py-3 rounded-xl font-semibold bg-gray-200 text-gray-700 whitespace-nowrap">📍 Locations</button>
             <button data-tab="products" class="tab-btn py-3 rounded-xl font-semibold bg-gray-200 text-gray-700 whitespace-nowrap">📦 Products</button>
             <button data-tab="deliveries" class="tab-btn py-3 rounded-xl font-semibold bg-gray-200 text-gray-700 whitespace-nowrap">🚚 Deliveries</button>
+            <button data-tab="transfers" class="tab-btn py-3 rounded-xl font-semibold bg-gray-200 text-gray-700 whitespace-nowrap">↔️ Transfers</button>
         </div>
 
         <!-- Dashboard Tab -->
@@ -114,6 +115,15 @@
                 <input type="text" id="searchDelivery" placeholder="🔍 Search deliveries..." class="flex-1 border p-2 rounded-xl">
             </div>
             <div id="deliveriesList" class="space-y-3"></div>
+        </div>
+
+        <!-- Transfers Tab -->
+        <div id="transfersTab" class="tab-content hidden">
+            <div class="flex gap-2 mb-4">
+                <button id="newTransferBtn" class="bg-purple-600 text-white px-4 py-2 rounded-xl flex-1 btn-large">↔️ New Transfer</button>
+                <input type="text" id="searchTransfer" placeholder="🔍 Search transfers..." class="flex-1 border p-2 rounded-xl">
+            </div>
+            <div id="transfersList" class="space-y-3"></div>
         </div>
 
     </div>
@@ -205,12 +215,46 @@
         </div>
     </div>
 
+    <!-- Transfer Modal -->
+    <div id="transferModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl max-w-md w-full p-5">
+            <h3 class="text-xl font-bold mb-4" id="transferModalTitle">Transfer Stock</h3>
+            
+            <label class="block text-sm font-semibold mb-2">Select Product</label>
+            <select id="transferProduct" class="w-full border p-2 rounded mb-4">
+                <option>Select Product</option>
+            </select>
+
+            <label class="block text-sm font-semibold mb-2">From Location</label>
+            <select id="transferFrom" class="w-full border p-2 rounded mb-4">
+                <option>Select Location</option>
+            </select>
+
+            <label class="block text-sm font-semibold mb-2">Current Stock at Source</label>
+            <input id="transferFromStock" type="text" class="w-full border p-2 rounded mb-4 bg-gray-100" readonly>
+
+            <label class="block text-sm font-semibold mb-2">To Location</label>
+            <select id="transferTo" class="w-full border p-2 rounded mb-4">
+                <option>Select Location</option>
+            </select>
+
+            <label class="block text-sm font-semibold mb-2">Quantity to Transfer</label>
+            <input id="transferQuantity" type="number" placeholder="Enter quantity" class="w-full border p-2 rounded mb-4" min="0">
+
+            <div class="flex gap-2">
+                <button id="saveTransferBtn" class="bg-purple-600 text-white px-4 py-2 rounded flex-1">Transfer</button>
+                <button id="closeTransferModal" class="bg-gray-400 px-4 py-2 rounded flex-1">Cancel</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // ============ LOCAL STORAGE DATA ============
         let locations = JSON.parse(localStorage.getItem('stockflow_locations')) || [];
         let products = JSON.parse(localStorage.getItem('stockflow_products')) || [];
-        let inventory = JSON.parse(localStorage.getItem('stockflow_inventory')) || {}; // { productId: { locationId: quantity } }
+        let inventory = JSON.parse(localStorage.getItem('stockflow_inventory')) || {};
         let deliveries = JSON.parse(localStorage.getItem('stockflow_deliveries')) || [];
+        let transfers = JSON.parse(localStorage.getItem('stockflow_transfers')) || [];
 
         // ============ SAVE TO LOCAL STORAGE ============
         function saveData() {
@@ -218,18 +262,34 @@
             localStorage.setItem('stockflow_products', JSON.stringify(products));
             localStorage.setItem('stockflow_inventory', JSON.stringify(inventory));
             localStorage.setItem('stockflow_deliveries', JSON.stringify(deliveries));
+            localStorage.setItem('stockflow_transfers', JSON.stringify(transfers));
             updateDashboard();
             renderLocations();
             renderProducts();
             renderDeliveries();
+            renderTransfers();
         }
+
+        // ============ TAB NAVIGATION ============
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tabName = btn.dataset.tab;
+                document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
+                document.getElementById(tabName + 'Tab').classList.remove('hidden');
+                document.querySelectorAll('.tab-btn').forEach(b => {
+                    b.classList.remove('bg-blue-600', 'text-white');
+                    b.classList.add('bg-gray-200', 'text-gray-700');
+                });
+                btn.classList.remove('bg-gray-200', 'text-gray-700');
+                btn.classList.add('bg-blue-600', 'text-white');
+            });
+        });
 
         // ============ DASHBOARD ============
         function updateDashboard() {
             document.getElementById('totalProducts').innerText = products.length;
             document.getElementById('totalLocations').innerText = locations.length;
 
-            // Calculate low stock items
             let lowStockItems = [];
             products.forEach(p => {
                 let totalQty = 0;
@@ -242,7 +302,6 @@
             });
             document.getElementById('lowStockAlert').innerText = lowStockItems.length;
 
-            // Calculate total value
             let totalVal = 0;
             products.forEach(p => {
                 let totalQty = 0;
@@ -253,7 +312,6 @@
             });
             document.getElementById('totalValue').innerText = '$' + totalVal.toFixed(2);
 
-            // Stock by location
             const stockByLocContainer = document.getElementById('stockByLocation');
             if (locations.length === 0) {
                 stockByLocContainer.innerHTML = '<div class="text-gray-500">No locations added yet</div>';
@@ -272,7 +330,6 @@
                 }).join('');
             }
 
-            // Low stock alerts
             const lowStockContainer = document.getElementById('lowStockList');
             if (lowStockItems.length === 0) {
                 lowStockContainer.innerHTML = '<div class="text-gray-500">✅ All stock levels healthy</div>';
@@ -344,20 +401,6 @@
                     }
                 });
             });
-
-            document.querySelectorAll('.edit-location').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const loc = locations.find(l => l.id === btn.dataset.id);
-                    if (loc) {
-                        document.getElementById('locationName').value = loc.name;
-                        document.getElementById('locationCity').value = loc.city;
-                        document.getElementById('locationState').value = loc.state;
-                        document.getElementById('locationAddress').value = loc.address;
-                        window._editLocationId = loc.id;
-                        document.getElementById('locationModal').classList.remove('hidden');
-                    }
-                });
-            });
         }
 
         document.getElementById('addLocationBtn').addEventListener('click', () => {
@@ -365,7 +408,6 @@
             document.getElementById('locationCity').value = '';
             document.getElementById('locationState').value = '';
             document.getElementById('locationAddress').value = '';
-            window._editLocationId = null;
             document.getElementById('locationModal').classList.remove('hidden');
         });
 
@@ -377,20 +419,10 @@
 
             if (!name || !city || !state) { alert('Name, City, and State required'); return; }
 
-            if (window._editLocationId) {
-                const loc = locations.find(l => l.id === window._editLocationId);
-                if (loc) {
-                    loc.name = name;
-                    loc.city = city;
-                    loc.state = state;
-                    loc.address = address;
-                }
-            } else {
-                locations.push({
-                    id: Date.now().toString(),
-                    name, city, state, address
-                });
-            }
+            locations.push({
+                id: Date.now().toString(),
+                name, city, state, address
+            });
             saveData();
             document.getElementById('locationModal').classList.add('hidden');
         });
@@ -471,21 +503,6 @@
                 });
             });
 
-            document.querySelectorAll('.edit-product').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const prod = products.find(p => p.id === btn.dataset.id);
-                    if (prod) {
-                        document.getElementById('productName').value = prod.name;
-                        document.getElementById('productSku').value = prod.sku;
-                        document.getElementById('productPrice').value = prod.price;
-                        document.getElementById('productThreshold').value = prod.threshold;
-                        window._editProductId = prod.id;
-                        document.getElementById('productModalTitle').innerText = 'Edit Product';
-                        document.getElementById('productModal').classList.remove('hidden');
-                    }
-                });
-            });
-
             document.querySelectorAll('.add-stock').forEach(btn => {
                 btn.addEventListener('click', () => {
                     window._stockProductId = btn.dataset.id;
@@ -503,12 +520,12 @@
         }
 
         document.getElementById('addProductBtn').addEventListener('click', () => {
+            document.getElementById('productModalTitle').innerText = 'Add Product';
             document.getElementById('productName').value = '';
             document.getElementById('productSku').value = '';
             document.getElementById('productPrice').value = '';
             document.getElementById('productThreshold').value = '10';
             window._editProductId = null;
-            document.getElementById('productModalTitle').innerText = 'Add Product';
             document.getElementById('productModal').classList.remove('hidden');
         });
 
@@ -520,22 +537,12 @@
 
             if (!name || !sku) { alert('Name and SKU required'); return; }
 
-            if (window._editProductId) {
-                const prod = products.find(p => p.id === window._editProductId);
-                if (prod) {
-                    prod.name = name;
-                    prod.sku = sku;
-                    prod.price = price;
-                    prod.threshold = threshold;
-                }
-            } else {
-                const productId = Date.now().toString();
-                products.push({ id: productId, name, sku, price, threshold });
-                inventory[productId] = {};
-                locations.forEach(loc => {
-                    inventory[productId][loc.id] = 0;
-                });
-            }
+            const productId = Date.now().toString();
+            products.push({ id: productId, name, sku, price, threshold });
+            inventory[productId] = {};
+            locations.forEach(loc => {
+                inventory[productId][loc.id] = 0;
+            });
             saveData();
             document.getElementById('productModal').classList.add('hidden');
         });
@@ -571,13 +578,10 @@
         // ============ DELIVERIES ============
         function renderDeliveries() {
             const search = document.getElementById('searchDelivery')?.value.toLowerCase() || '';
-            let filtered = deliveries.filter(d => {
-                const prod = products.find(p => p.id === d.productId);
-                const loc = locations.find(l => l.id === d.locationId);
-                return (prod?.name.toLowerCase().includes(search) || 
-                        loc?.name.toLowerCase().includes(search) ||
-                        d.customerName.toLowerCase().includes(search)) || false;
-            });
+            let filtered = deliveries.filter(d => 
+                d.customerName.toLowerCase().includes(search) || 
+                d.productName.toLowerCase().includes(search)
+            );
 
             const container = document.getElementById('deliveriesList');
             if (filtered.length === 0) {
@@ -585,33 +589,35 @@
                 return;
             }
 
-            container.innerHTML = filtered.map(d => {
-                const prod = products.find(p => p.id === d.productId);
-                const loc = locations.find(l => l.id === d.locationId);
-                const date = new Date(d.date).toLocaleDateString();
+            container.innerHTML = filtered.map((d, idx) => {
                 const statusColors = {
                     'pending': 'bg-yellow-100 text-yellow-800',
                     'completed': 'bg-green-100 text-green-800',
                     'failed': 'bg-red-100 text-red-800'
                 };
-
                 return `
                     <div class="bg-white p-4 rounded-xl shadow">
                         <div class="flex justify-between items-start mb-2">
                             <div>
-                                <h3 class="font-bold">${prod?.name} × ${d.quantity}</h3>
-                                <p class="text-sm text-gray-600">📍 ${loc?.name} (${loc?.city})</p>
+                                <h3 class="font-bold text-lg">${d.productName}</h3>
                                 <p class="text-sm text-gray-600">👤 ${d.customerName}</p>
-                                <p class="text-xs text-gray-500">📍 ${d.address}</p>
+                                <p class="text-xs text-gray-500">📍 ${d.locationName}</p>
                             </div>
-                            <div class="text-right">
-                                <span class="text-xs ${statusColors[d.status]} px-2 py-1 rounded block mb-2">${d.status.toUpperCase()}</span>
-                                <span class="text-xs bg-blue-200 text-blue-800 px-2 py-1 rounded block">${date}</span>
+                            <button class="delete-delivery text-red-600 font-bold text-lg" data-index="${idx}">✕</button>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 mb-3">
+                            <div class="bg-blue-50 p-2 rounded">
+                                <p class="text-xs text-gray-600">Qty Delivered</p>
+                                <p class="text-lg font-bold">${d.quantityDelivered}</p>
+                            </div>
+                            <div class="bg-gray-50 p-2 rounded">
+                                <p class="text-xs text-gray-600">Status</p>
+                                <p class="text-sm font-bold ${statusColors[d.status] || 'bg-gray-200'} px-2 py-1 rounded text-center">${d.status}</p>
                             </div>
                         </div>
+                        <p class="text-xs text-gray-500 mb-3">📅 ${new Date(d.date).toLocaleString()}</p>
                         <div class="flex gap-2">
-                            <button class="edit-delivery flex-1 bg-blue-500 text-white px-3 py-1 rounded text-sm" data-id="${d.id}">✏️ Edit</button>
-                            <button class="delete-delivery flex-1 bg-red-500 text-white px-3 py-1 rounded text-sm" data-id="${d.id}">🗑️ Delete</button>
+                            <button class="edit-delivery flex-1 bg-blue-500 text-white px-3 py-1 rounded text-sm" data-index="${idx}">✏️ Edit</button>
                         </div>
                     </div>
                 `;
@@ -619,16 +625,14 @@
 
             document.querySelectorAll('.delete-delivery').forEach(btn => {
                 btn.addEventListener('click', () => {
-                    if (confirm('Delete this delivery? Stock will be restored.')) {
-                        const delivery = deliveries.find(d => d.id === btn.dataset.id);
-                        if (delivery) {
-                            // Restore stock when delivery is deleted
-                            if (inventory[delivery.productId]) {
-                                inventory[delivery.productId][delivery.locationId] = 
-                                    (inventory[delivery.productId][delivery.locationId] || 0) + delivery.quantity;
-                            }
+                    if (confirm('Delete this delivery?')) {
+                        const idx = parseInt(btn.dataset.index);
+                        const d = deliveries[idx];
+                        // Restore stock
+                        if (inventory[d.productId] && inventory[d.productId][d.locationId]) {
+                            inventory[d.productId][d.locationId] += d.quantityDelivered;
                         }
-                        deliveries = deliveries.filter(d => d.id !== btn.dataset.id);
+                        deliveries.splice(idx, 1);
                         saveData();
                     }
                 });
@@ -636,117 +640,123 @@
 
             document.querySelectorAll('.edit-delivery').forEach(btn => {
                 btn.addEventListener('click', () => {
-                    const delivery = deliveries.find(d => d.id === btn.dataset.id);
-                    if (delivery) {
-                        window._editDeliveryId = delivery.id;
-                        document.getElementById('deliveryLocation').value = delivery.locationId;
-                        document.getElementById('deliveryProduct').value = delivery.productId;
-                        document.getElementById('deliveryQuantity').value = delivery.quantity;
-                        document.getElementById('customerName').value = delivery.customerName;
-                        document.getElementById('customerAddress').value = delivery.address;
-                        document.getElementById('deliveryStatus').value = delivery.status;
-                        document.getElementById('deliveryModalTitle').innerText = 'Edit Delivery';
-                        updateCurrentStock();
-                        document.getElementById('deliveryModal').classList.remove('hidden');
-                    }
+                    const idx = parseInt(btn.dataset.index);
+                    const d = deliveries[idx];
+                    window._editDeliveryIndex = idx;
+                    document.getElementById('deliveryModalTitle').innerText = 'Edit Delivery';
+                    document.getElementById('deliveryLocation').value = d.locationId;
+                    document.getElementById('deliveryProduct').value = d.productId;
+                    document.getElementById('currentStockDisplay').value = d.quantityDelivered;
+                    document.getElementById('deliveryQuantity').value = d.quantityDelivered;
+                    document.getElementById('customerName').value = d.customerName;
+                    document.getElementById('customerAddress').value = d.customerAddress;
+                    document.getElementById('deliveryStatus').value = d.status;
+                    document.getElementById('deliveryModal').classList.remove('hidden');
                 });
             });
         }
 
-        function updateCurrentStock() {
-            const locId = document.getElementById('deliveryLocation').value;
-            const prodId = document.getElementById('deliveryProduct').value;
-            
-            if (locId && prodId && locId !== 'Select Location' && prodId !== 'Select Product') {
-                const currentQty = (inventory[prodId]?.[locId]) || 0;
-                document.getElementById('currentStockDisplay').value = currentQty + ' units';
-            } else {
-                document.getElementById('currentStockDisplay').value = '';
-            }
-        }
-
         document.getElementById('recordDeliveryBtn').addEventListener('click', () => {
-            if (products.length === 0) { alert('Add products first'); return; }
-            if (locations.length === 0) { alert('Add locations first'); return; }
+            window._editDeliveryIndex = null;
+            document.getElementById('deliveryModalTitle').innerText = 'Record Delivery';
+            document.getElementById('deliveryLocation').value = 'Select Location';
+            document.getElementById('deliveryProduct').value = 'Select Product';
+            document.getElementById('currentStockDisplay').value = '';
+            document.getElementById('deliveryQuantity').value = '';
+            document.getElementById('customerName').value = '';
+            document.getElementById('customerAddress').value = '';
+            document.getElementById('deliveryStatus').value = 'pending';
 
             const locSelect = document.getElementById('deliveryLocation');
             locSelect.innerHTML = '<option>Select Location</option>' + 
                 locations.map(l => `<option value="${l.id}">${l.name} (${l.city})</option>`).join('');
 
-            const prodSelect = document.getElementById('deliveryProduct');
-            prodSelect.innerHTML = '<option>Select Product</option>' + 
-                products.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
-
-            document.getElementById('deliveryQuantity').value = '';
-            document.getElementById('customerName').value = '';
-            document.getElementById('customerAddress').value = '';
-            document.getElementById('deliveryStatus').value = 'pending';
-            document.getElementById('currentStockDisplay').value = '';
-            window._editDeliveryId = null;
-            document.getElementById('deliveryModalTitle').innerText = 'Record Delivery';
             document.getElementById('deliveryModal').classList.remove('hidden');
         });
 
-        document.getElementById('deliveryLocation').addEventListener('change', updateCurrentStock);
-        document.getElementById('deliveryProduct').addEventListener('change', updateCurrentStock);
+        document.getElementById('deliveryProduct').addEventListener('change', () => {
+            const prodId = document.getElementById('deliveryProduct').value;
+            const locId = document.getElementById('deliveryLocation').value;
+            
+            if (prodId && prodId !== 'Select Product' && locId && locId !== 'Select Location') {
+                const stock = inventory[prodId]?.[locId] || 0;
+                document.getElementById('currentStockDisplay').value = stock;
+            }
+        });
+
+        document.getElementById('deliveryLocation').addEventListener('change', () => {
+            const prodId = document.getElementById('deliveryProduct').value;
+            const locId = document.getElementById('deliveryLocation').value;
+            
+            if (prodId && prodId !== 'Select Product' && locId && locId !== 'Select Location') {
+                const stock = inventory[prodId]?.[locId] || 0;
+                document.getElementById('currentStockDisplay').value = stock;
+            }
+        });
 
         document.getElementById('saveDeliveryBtn').addEventListener('click', () => {
             const locId = document.getElementById('deliveryLocation').value;
             const prodId = document.getElementById('deliveryProduct').value;
             const qty = parseInt(document.getElementById('deliveryQuantity').value) || 0;
-            const customerName = document.getElementById('customerName').value.trim();
-            const address = document.getElementById('customerAddress').value.trim();
+            const custName = document.getElementById('customerName').value.trim();
+            const custAddr = document.getElementById('customerAddress').value.trim();
             const status = document.getElementById('deliveryStatus').value;
 
-            if (!locId || !prodId || locId === 'Select Location' || prodId === 'Select Product') {
-                alert('Select location and product');
+            if (!locId || locId === 'Select Location' || !prodId || prodId === 'Select Product' || !qty || qty <= 0) {
+                alert('Complete all fields');
                 return;
             }
 
-            if (!qty || qty <= 0) {
-                alert('Enter valid quantity');
-                return;
-            }
-
-            const currentStock = (inventory[prodId]?.[locId]) || 0;
-            if (qty > currentStock) {
-                alert(`Not enough stock! Available: ${currentStock} units`);
-                return;
-            }
-
-            if (!customerName || !address) {
-                alert('Customer name and address required');
-                return;
-            }
-
-            if (window._editDeliveryId) {
-                // Edit existing delivery
-                const oldDelivery = deliveries.find(d => d.id === window._editDeliveryId);
-                if (oldDelivery) {
-                    // Restore old quantity
-                    inventory[oldDelivery.productId][oldDelivery.locationId] += oldDelivery.quantity;
-                    
-                    // Deduct new quantity
-                    inventory[prodId][locId] -= qty;
-                    
-                    // Update delivery
-                    oldDelivery.locationId = locId;
-                    oldDelivery.productId = prodId;
-                    oldDelivery.quantity = qty;
-                    oldDelivery.customerName = customerName;
-                    oldDelivery.address = address;
-                    oldDelivery.status = status;
+            const currentStock = inventory[prodId]?.[locId] || 0;
+            
+            // Editing existing delivery
+            if (window._editDeliveryIndex !== null && window._editDeliveryIndex !== undefined) {
+                const oldDelivery = deliveries[window._editDeliveryIndex];
+                const oldQty = oldDelivery.quantityDelivered;
+                
+                // Restore old qty
+                inventory[oldDelivery.productId][oldDelivery.locationId] += oldQty;
+                
+                // Check if enough stock for new qty
+                const availableStock = inventory[prodId][locId];
+                if (qty > availableStock) {
+                    alert(`Not enough stock! Available: ${availableStock}`);
+                    return;
                 }
-            } else {
-                // Create new delivery
+                
+                // Deduct new qty
                 inventory[prodId][locId] -= qty;
+                
+                deliveries[window._editDeliveryIndex] = {
+                    id: oldDelivery.id,
+                    productId: prodId,
+                    locationId: locId,
+                    productName: products.find(p => p.id === prodId).name,
+                    locationName: locations.find(l => l.id === locId).name,
+                    quantityDelivered: qty,
+                    customerName: custName,
+                    customerAddress: custAddr,
+                    status,
+                    date: oldDelivery.date
+                };
+            } else {
+                // New delivery
+                if (qty > currentStock) {
+                    alert(`Not enough stock! Available: ${currentStock}`);
+                    return;
+                }
+
+                inventory[prodId][locId] -= qty;
+
                 deliveries.push({
                     id: Date.now().toString(),
-                    locationId: locId,
                     productId: prodId,
-                    quantity: qty,
-                    customerName,
-                    address,
+                    locationId: locId,
+                    productName: products.find(p => p.id === prodId).name,
+                    locationName: locations.find(l => l.id === locId).name,
+                    quantityDelivered: qty,
+                    customerName: custName,
+                    customerAddress: custAddr,
                     status,
                     date: new Date().toISOString()
                 });
@@ -762,57 +772,236 @@
 
         document.getElementById('searchDelivery').addEventListener('input', renderDeliveries);
 
-        // ============ TAB SWITCHING ============
-        document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const tab = btn.dataset.tab;
-                document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
-                document.getElementById(tab + 'Tab').classList.remove('hidden');
-                document.querySelectorAll('.tab-btn').forEach(b => {
-                    b.classList.remove('bg-blue-600', 'text-white');
-                    b.classList.add('bg-gray-200', 'text-gray-700');
+        // ============ TRANSFERS ============
+        function renderTransfers() {
+            const search = document.getElementById('searchTransfer')?.value.toLowerCase() || '';
+            let filtered = transfers.filter(t => 
+                t.productName.toLowerCase().includes(search) ||
+                t.fromLocation.toLowerCase().includes(search) ||
+                t.toLocation.toLowerCase().includes(search)
+            );
+
+            const container = document.getElementById('transfersList');
+            if (filtered.length === 0) {
+                container.innerHTML = '<div class="text-center p-4 bg-white rounded">No transfers recorded</div>';
+                return;
+            }
+
+            container.innerHTML = filtered.map((t, idx) => {
+                return `
+                    <div class="bg-white p-4 rounded-xl shadow">
+                        <div class="flex justify-between items-start mb-2">
+                            <div>
+                                <h3 class="font-bold text-lg">${t.productName}</h3>
+                                <p class="text-sm text-gray-600">📦 ${t.quantity} units</p>
+                            </div>
+                            <button class="delete-transfer text-red-600 font-bold text-lg" data-index="${idx}">✕</button>
+                        </div>
+                        <div class="bg-blue-50 p-2 rounded mb-2">
+                            <p class="text-xs text-gray-600">From → To</p>
+                            <p class="text-sm font-bold">${t.fromLocation} ➡️ ${t.toLocation}</p>
+                        </div>
+                        <p class="text-xs text-gray-500">📅 ${new Date(t.date).toLocaleString()}</p>
+                        <div class="flex gap-2 mt-3">
+                            <button class="edit-transfer flex-1 bg-blue-500 text-white px-3 py-1 rounded text-sm" data-index="${idx}">✏️ Edit</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            document.querySelectorAll('.delete-transfer').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    if (confirm('Delete this transfer?')) {
+                        const idx = parseInt(btn.dataset.index);
+                        const t = transfers[idx];
+                        // Reverse transfer
+                        inventory[t.productId][t.fromLocationId] += t.quantity;
+                        inventory[t.productId][t.toLocationId] -= t.quantity;
+                        transfers.splice(idx, 1);
+                        saveData();
+                    }
                 });
-                btn.classList.remove('bg-gray-200', 'text-gray-700');
-                btn.classList.add('bg-blue-600', 'text-white');
             });
+
+            document.querySelectorAll('.edit-transfer').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const idx = parseInt(btn.dataset.index);
+                    const t = transfers[idx];
+                    window._editTransferIndex = idx;
+                    document.getElementById('transferModalTitle').innerText = 'Edit Transfer';
+                    document.getElementById('transferProduct').value = t.productId;
+                    document.getElementById('transferFrom').value = t.fromLocationId;
+                    document.getElementById('transferFromStock').value = t.quantity;
+                    document.getElementById('transferTo').value = t.toLocationId;
+                    document.getElementById('transferQuantity').value = t.quantity;
+                    document.getElementById('transferModal').classList.remove('hidden');
+                });
+            });
+        }
+
+        document.getElementById('newTransferBtn').addEventListener('click', () => {
+            window._editTransferIndex = null;
+            document.getElementById('transferModalTitle').innerText = 'New Transfer';
+            document.getElementById('transferProduct').value = 'Select Product';
+            document.getElementById('transferFrom').value = 'Select Location';
+            document.getElementById('transferFromStock').value = '';
+            document.getElementById('transferTo').value = 'Select Location';
+            document.getElementById('transferQuantity').value = '';
+
+            const prodSelect = document.getElementById('transferProduct');
+            prodSelect.innerHTML = '<option>Select Product</option>' + 
+                products.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+
+            const fromSelect = document.getElementById('transferFrom');
+            fromSelect.innerHTML = '<option>Select Location</option>' + 
+                locations.map(l => `<option value="${l.id}">${l.name} (${l.city})</option>`).join('');
+
+            const toSelect = document.getElementById('transferTo');
+            toSelect.innerHTML = '<option>Select Location</option>' + 
+                locations.map(l => `<option value="${l.id}">${l.name} (${l.city})</option>`).join('');
+
+            document.getElementById('transferModal').classList.remove('hidden');
         });
 
-        // ============ EXPORT ============
-        document.getElementById('exportProductsBtn').addEventListener('click', () => {
-            let data = [];
-            products.forEach(p => {
-                let row = { 'Product': p.name, 'SKU': p.sku, 'Price': p.price };
-                let total = 0;
-                locations.forEach(l => {
-                    const qty = (inventory[p.id]?.[l.id]) || 0;
-                    row[l.city] = qty;
-                    total += qty;
+        document.getElementById('transferProduct').addEventListener('change', () => {
+            const prodId = document.getElementById('transferProduct').value;
+            const fromLocId = document.getElementById('transferFrom').value;
+            
+            if (prodId && prodId !== 'Select Product' && fromLocId && fromLocId !== 'Select Location') {
+                const stock = inventory[prodId]?.[fromLocId] || 0;
+                document.getElementById('transferFromStock').value = stock;
+            }
+        });
+
+        document.getElementById('transferFrom').addEventListener('change', () => {
+            const prodId = document.getElementById('transferProduct').value;
+            const fromLocId = document.getElementById('transferFrom').value;
+            
+            if (prodId && prodId !== 'Select Product' && fromLocId && fromLocId !== 'Select Location') {
+                const stock = inventory[prodId]?.[fromLocId] || 0;
+                document.getElementById('transferFromStock').value = stock;
+            }
+        });
+
+        document.getElementById('saveTransferBtn').addEventListener('click', () => {
+            const prodId = document.getElementById('transferProduct').value;
+            const fromLocId = document.getElementById('transferFrom').value;
+            const toLocId = document.getElementById('transferTo').value;
+            const qty = parseInt(document.getElementById('transferQuantity').value) || 0;
+
+            if (!prodId || prodId === 'Select Product' || !fromLocId || fromLocId === 'Select Location' || 
+                !toLocId || toLocId === 'Select Location' || !qty || qty <= 0) {
+                alert('Complete all fields');
+                return;
+            }
+
+            if (fromLocId === toLocId) {
+                alert('From and To locations must be different');
+                return;
+            }
+
+            const availableStock = inventory[prodId]?.[fromLocId] || 0;
+            
+            // Editing existing transfer
+            if (window._editTransferIndex !== null && window._editTransferIndex !== undefined) {
+                const oldTransfer = transfers[window._editTransferIndex];
+                // Reverse old transfer
+                inventory[oldTransfer.productId][oldTransfer.fromLocationId] += oldTransfer.quantity;
+                inventory[oldTransfer.productId][oldTransfer.toLocationId] -= oldTransfer.quantity;
+                
+                // Check new qty
+                const newAvailable = inventory[prodId][fromLocId];
+                if (qty > newAvailable) {
+                    alert(`Not enough stock! Available: ${newAvailable}`);
+                    return;
+                }
+                
+                // Apply new transfer
+                inventory[prodId][fromLocId] -= qty;
+                inventory[prodId][toLocId] = (inventory[prodId][toLocId] || 0) + qty;
+                
+                const prod = products.find(p => p.id === prodId);
+                const fromLoc = locations.find(l => l.id === fromLocId);
+                const toLoc = locations.find(l => l.id === toLocId);
+                
+                transfers[window._editTransferIndex] = {
+                    id: oldTransfer.id,
+                    productId: prodId,
+                    productName: prod.name,
+                    fromLocationId: fromLocId,
+                    fromLocation: fromLoc.name,
+                    toLocationId: toLocId,
+                    toLocation: toLoc.name,
+                    quantity: qty,
+                    date: oldTransfer.date
+                };
+            } else {
+                // New transfer
+                if (qty > availableStock) {
+                    alert(`Not enough stock! Available: ${availableStock}`);
+                    return;
+                }
+
+                inventory[prodId][fromLocId] -= qty;
+                inventory[prodId][toLocId] = (inventory[prodId][toLocId] || 0) + qty;
+
+                const prod = products.find(p => p.id === prodId);
+                const fromLoc = locations.find(l => l.id === fromLocId);
+                const toLoc = locations.find(l => l.id === toLocId);
+
+                transfers.push({
+                    id: Date.now().toString(),
+                    productId: prodId,
+                    productName: prod.name,
+                    fromLocationId: fromLocId,
+                    fromLocation: fromLoc.name,
+                    toLocationId: toLocId,
+                    toLocation: toLoc.name,
+                    quantity: qty,
+                    date: new Date().toISOString()
                 });
-                row['Total'] = total;
+            }
+
+            saveData();
+            document.getElementById('transferModal').classList.add('hidden');
+        });
+
+        document.getElementById('closeTransferModal').addEventListener('click', () => {
+            document.getElementById('transferModal').classList.add('hidden');
+        });
+
+        document.getElementById('searchTransfer').addEventListener('input', renderTransfers);
+
+        // ============ EXPORT & CLEAR ============
+        document.getElementById('exportProductsBtn').addEventListener('click', () => {
+            const data = [['Location', ...products.map(p => p.name)]];
+            locations.forEach(loc => {
+                const row = [loc.name];
+                products.forEach(prod => {
+                    row.push(inventory[prod.id]?.[loc.id] || 0);
+                });
                 data.push(row);
             });
-            const ws = XLSX.utils.json_to_sheet(data);
+
+            const ws = XLSX.utils.aoa_to_sheet(data);
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, 'Inventory');
-            XLSX.writeFile(wb, 'stockflow-inventory.xlsx');
+            XLSX.writeFile(wb, 'stockflow_inventory.xlsx');
         });
 
-        // ============ CLEAR ALL ============
         document.getElementById('clearAllBtn').addEventListener('click', () => {
-            if (confirm('⚠️ This will delete ALL data. Are you sure?')) {
+            if (confirm('Clear all data?')) {
                 locations = [];
                 products = [];
                 inventory = {};
                 deliveries = [];
+                transfers = [];
                 saveData();
             }
         });
 
-        // ============ INITIALIZE ============
+        // ============ INIT ============
         updateDashboard();
-        renderLocations();
-        renderProducts();
-        renderDeliveries();
     </script>
 </body>
 </html>
