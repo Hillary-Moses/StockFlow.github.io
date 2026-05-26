@@ -15,8 +15,12 @@
         input, select, textarea, button {
             font-size: 16px;
         }
-        .low-stock-badge {
-            animation: pulse 1.5s infinite;
+        .location-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
         }
         @keyframes pulse {
             0% { opacity: 0.7; }
@@ -32,7 +36,10 @@
         
         <!-- Top bar -->
         <div class="flex justify-between items-center bg-white p-4 rounded-xl shadow mb-4">
-            <h1 class="text-2xl font-bold text-blue-800">📦 StockFlow Multi-Location</h1>
+            <div>
+                <h1 class="text-2xl font-bold text-blue-800">📦 StockFlow</h1>
+                <p class="text-xs text-gray-500">Multi-Location Inventory Management</p>
+            </div>
             <div class="flex gap-2 items-center">
                 <span id="totalItems" class="text-sm bg-blue-100 px-3 py-1 rounded-full">Items: 0</span>
                 <button id="clearAllBtn" class="bg-red-500 text-white px-3 py-1 rounded text-sm">Clear All</button>
@@ -40,12 +47,11 @@
         </div>
 
         <!-- Tab Navigation -->
-        <div class="grid grid-cols-5 gap-2 mb-6 bg-white p-2 rounded-xl shadow">
-            <button data-tab="dashboard" class="tab-btn py-3 rounded-xl font-semibold bg-blue-600 text-white">📊 Dashboard</button>
-            <button data-tab="locations" class="tab-btn py-3 rounded-xl font-semibold bg-gray-200 text-gray-700">📍 Locations</button>
-            <button data-tab="products" class="tab-btn py-3 rounded-xl font-semibold bg-gray-200 text-gray-700">📦 Products</button>
-            <button data-tab="transfers" class="tab-btn py-3 rounded-xl font-semibold bg-gray-200 text-gray-700">🚚 Transfers</button>
-            <button data-tab="deliveries" class="tab-btn py-3 rounded-xl font-semibold bg-gray-200 text-gray-700">📤 Deliveries</button>
+        <div class="grid grid-cols-4 gap-2 mb-6 bg-white p-2 rounded-xl shadow overflow-x-auto">
+            <button data-tab="dashboard" class="tab-btn py-3 rounded-xl font-semibold bg-blue-600 text-white whitespace-nowrap">📊 Dashboard</button>
+            <button data-tab="locations" class="tab-btn py-3 rounded-xl font-semibold bg-gray-200 text-gray-700 whitespace-nowrap">📍 Locations</button>
+            <button data-tab="products" class="tab-btn py-3 rounded-xl font-semibold bg-gray-200 text-gray-700 whitespace-nowrap">📦 Products</button>
+            <button data-tab="deliveries" class="tab-btn py-3 rounded-xl font-semibold bg-gray-200 text-gray-700 whitespace-nowrap">🚚 Deliveries</button>
         </div>
 
         <!-- Dashboard Tab -->
@@ -56,27 +62,29 @@
                     <p id="totalProducts" class="text-3xl font-bold">0</p>
                 </div>
                 <div class="bg-white rounded-xl p-4 shadow text-center">
-                    <p class="text-gray-500 text-sm">📍 Total Locations</p>
+                    <p class="text-gray-500 text-sm">📍 Locations</p>
                     <p id="totalLocations" class="text-3xl font-bold">0</p>
                 </div>
                 <div class="bg-white rounded-xl p-4 shadow text-center">
-                    <p class="text-gray-500 text-sm">📤 Total Deliveries</p>
-                    <p id="totalDeliveries" class="text-3xl font-bold">0</p>
-                </div>
-                <div class="bg-white rounded-xl p-4 shadow text-center">
-                    <p class="text-gray-500 text-sm">⚠️ Low Stock Alerts</p>
+                    <p class="text-gray-500 text-sm">⚠️ Low Stock Items</p>
                     <p id="lowStockAlert" class="text-3xl font-bold text-red-600">0</p>
                 </div>
+                <div class="bg-white rounded-xl p-4 shadow text-center">
+                    <p class="text-gray-500 text-sm">💼 Total Stock Value</p>
+                    <p id="totalValue" class="text-3xl font-bold text-green-600">$0</p>
+                </div>
             </div>
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <div class="bg-white rounded-xl p-4 shadow">
-                    <h3 class="font-bold text-lg mb-3">📍 Stock by Location</h3>
-                    <div id="locationStockList" class="space-y-2"></div>
-                </div>
-                <div class="bg-white rounded-xl p-4 shadow">
-                    <h3 class="font-bold text-lg mb-3">⚠️ Low Stock Alerts</h3>
-                    <div id="lowStockList" class="space-y-2"></div>
-                </div>
+
+            <!-- Stock by Location -->
+            <div class="bg-white rounded-xl p-4 shadow mb-4">
+                <h3 class="font-bold text-lg mb-3">📊 Stock Distribution by Location</h3>
+                <div id="stockByLocation" class="space-y-2"></div>
+            </div>
+
+            <!-- Low Stock Alerts -->
+            <div class="bg-white rounded-xl p-4 shadow">
+                <h3 class="font-bold text-lg mb-3">⚠️ Low Stock Alerts</h3>
+                <div id="lowStockList" class="space-y-2"></div>
             </div>
         </div>
 
@@ -99,19 +107,10 @@
             <div id="productsList" class="space-y-3"></div>
         </div>
 
-        <!-- Transfers Tab -->
-        <div id="transfersTab" class="tab-content hidden">
-            <div class="flex gap-2 mb-4">
-                <button id="addTransferBtn" class="bg-amber-600 text-white px-4 py-2 rounded-xl flex-1 btn-large">🚚 New Transfer</button>
-                <input type="text" id="searchTransfer" placeholder="🔍 Search transfers..." class="flex-1 border p-2 rounded-xl">
-            </div>
-            <div id="transfersList" class="space-y-3"></div>
-        </div>
-
         <!-- Deliveries Tab -->
         <div id="deliveriesTab" class="tab-content hidden">
             <div class="flex gap-2 mb-4">
-                <button id="addDeliveryBtn" class="bg-blue-600 text-white px-4 py-2 rounded-xl flex-1 btn-large">📤 Record Delivery</button>
+                <button id="recordDeliveryBtn" class="bg-amber-600 text-white px-4 py-2 rounded-xl flex-1 btn-large">📤 Record Delivery</button>
                 <input type="text" id="searchDelivery" placeholder="🔍 Search deliveries..." class="flex-1 border p-2 rounded-xl">
             </div>
             <div id="deliveriesList" class="space-y-3"></div>
@@ -122,11 +121,11 @@
     <!-- Location Modal -->
     <div id="locationModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-xl max-w-md w-full p-5">
-            <h3 class="text-xl font-bold mb-4" id="locationModalTitle">Add Location</h3>
+            <h3 class="text-xl font-bold mb-4">Add Location</h3>
             <input id="locationName" placeholder="Location Name (e.g., Ibadan HQ)" class="w-full border p-2 rounded mb-2">
             <input id="locationCity" placeholder="City" class="w-full border p-2 rounded mb-2">
             <input id="locationState" placeholder="State" class="w-full border p-2 rounded mb-2">
-            <input id="locationAddress" placeholder="Address" class="w-full border p-2 rounded mb-4">
+            <textarea id="locationAddress" placeholder="Full Address" class="w-full border p-2 rounded mb-4" rows="3"></textarea>
             <div class="flex gap-2">
                 <button id="saveLocationBtn" class="bg-blue-600 text-white px-4 py-2 rounded flex-1">Save</button>
                 <button id="closeLocationModal" class="bg-gray-400 px-4 py-2 rounded flex-1">Cancel</button>
@@ -139,9 +138,9 @@
         <div class="bg-white rounded-xl max-w-md w-full p-5">
             <h3 class="text-xl font-bold mb-4" id="productModalTitle">Add Product</h3>
             <input id="productName" placeholder="Product Name" class="w-full border p-2 rounded mb-2">
-            <input id="productSku" placeholder="SKU" class="w-full border p-2 rounded mb-2">
-            <input id="productPrice" type="number" placeholder="Price" class="w-full border p-2 rounded mb-2">
-            <input id="productThreshold" type="number" placeholder="Low Stock Threshold" class="w-full border p-2 rounded mb-4">
+            <input id="productSku" placeholder="SKU/Code" class="w-full border p-2 rounded mb-2">
+            <input id="productPrice" type="number" placeholder="Price per Unit" class="w-full border p-2 rounded mb-2">
+            <input id="productThreshold" type="number" placeholder="Low Stock Threshold" class="w-full border p-2 rounded mb-4" value="10">
             <div class="flex gap-2">
                 <button id="saveProductBtn" class="bg-blue-600 text-white px-4 py-2 rounded flex-1">Save</button>
                 <button id="closeProductModal" class="bg-gray-400 px-4 py-2 rounded flex-1">Cancel</button>
@@ -149,63 +148,58 @@
         </div>
     </div>
 
-    <!-- Stock Modal -->
+    <!-- Stock Add Modal -->
     <div id="stockModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-xl max-w-md w-full p-5">
             <h3 class="text-xl font-bold mb-4">Add Stock</h3>
+            <p id="stockModalProduct" class="text-sm text-gray-600 mb-2"></p>
             <select id="stockLocation" class="w-full border p-2 rounded mb-2">
                 <option>Select Location</option>
             </select>
-            <input id="stockQuantity" type="number" placeholder="Quantity" class="w-full border p-2 rounded mb-4">
+            <input id="stockQuantity" type="number" placeholder="Quantity to Add" class="w-full border p-2 rounded mb-4">
             <div class="flex gap-2">
-                <button id="saveStockBtn" class="bg-blue-600 text-white px-4 py-2 rounded flex-1">Add Stock</button>
+                <button id="saveStockBtn" class="bg-blue-600 text-white px-4 py-2 rounded flex-1">Save</button>
                 <button id="closeStockModal" class="bg-gray-400 px-4 py-2 rounded flex-1">Cancel</button>
             </div>
         </div>
     </div>
 
-    <!-- Transfer Modal -->
-    <div id="transferModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-xl max-w-md w-full p-5">
-            <h3 class="text-xl font-bold mb-4">Transfer Stock</h3>
-            <select id="transferProduct" class="w-full border p-2 rounded mb-2">
-                <option>Select Product</option>
-            </select>
-            <select id="transferFrom" class="w-full border p-2 rounded mb-2">
-                <option>From Location</option>
-            </select>
-            <select id="transferTo" class="w-full border p-2 rounded mb-2">
-                <option>To Location</option>
-            </select>
-            <input id="transferQuantity" type="number" placeholder="Quantity" class="w-full border p-2 rounded mb-4">
-            <div class="flex gap-2">
-                <button id="saveTransferBtn" class="bg-blue-600 text-white px-4 py-2 rounded flex-1">Transfer</button>
-                <button id="closeTransferModal" class="bg-gray-400 px-4 py-2 rounded flex-1">Cancel</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Delivery Modal -->
+    <!-- Delivery Recording Modal -->
     <div id="deliveryModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-xl max-w-md w-full p-5">
+        <div class="bg-white rounded-xl max-w-md w-full p-5 max-h-[90vh] overflow-y-auto">
             <h3 class="text-xl font-bold mb-4" id="deliveryModalTitle">Record Delivery</h3>
-            <select id="deliveryLocation" class="w-full border p-2 rounded mb-2">
+            
+            <label class="block text-sm font-semibold mb-2">Select Location</label>
+            <select id="deliveryLocation" class="w-full border p-2 rounded mb-4">
                 <option>Select Location</option>
             </select>
-            <select id="deliveryProduct" class="w-full border p-2 rounded mb-2">
+
+            <label class="block text-sm font-semibold mb-2">Select Product</label>
+            <select id="deliveryProduct" class="w-full border p-2 rounded mb-4">
                 <option>Select Product</option>
             </select>
-            <input id="deliveryQuantityInStock" type="number" placeholder="Quantity in Stock" class="w-full border p-2 rounded mb-2" readonly>
-            <input id="deliveryQuantityDelivered" type="number" placeholder="Quantity Delivered" class="w-full border p-2 rounded mb-2">
-            <input id="deliveryCustomer" placeholder="Customer Name" class="w-full border p-2 rounded mb-2">
-            <input id="deliveryAddress" placeholder="Delivery Address" class="w-full border p-2 rounded mb-2">
+
+            <label class="block text-sm font-semibold mb-2">Current Stock</label>
+            <input id="currentStockDisplay" type="text" class="w-full border p-2 rounded mb-4 bg-gray-100" readonly>
+
+            <label class="block text-sm font-semibold mb-2">Quantity Delivered</label>
+            <input id="deliveryQuantity" type="number" placeholder="Enter quantity delivered" class="w-full border p-2 rounded mb-2" min="0">
+
+            <label class="block text-sm font-semibold mb-2">Customer Name</label>
+            <input id="customerName" placeholder="Customer name" class="w-full border p-2 rounded mb-2">
+
+            <label class="block text-sm font-semibold mb-2">Customer Address</label>
+            <textarea id="customerAddress" placeholder="Delivery address" class="w-full border p-2 rounded mb-2" rows="2"></textarea>
+
+            <label class="block text-sm font-semibold mb-2">Status</label>
             <select id="deliveryStatus" class="w-full border p-2 rounded mb-4">
                 <option value="pending">Pending</option>
                 <option value="completed">Completed</option>
                 <option value="failed">Failed</option>
             </select>
+
             <div class="flex gap-2">
-                <button id="saveDeliveryBtn" class="bg-blue-600 text-white px-4 py-2 rounded flex-1">Save</button>
+                <button id="saveDeliveryBtn" class="bg-blue-600 text-white px-4 py-2 rounded flex-1">Record Delivery</button>
                 <button id="closeDeliveryModal" class="bg-gray-400 px-4 py-2 rounded flex-1">Cancel</button>
             </div>
         </div>
@@ -215,26 +209,18 @@
         // ============ LOCAL STORAGE DATA ============
         let locations = JSON.parse(localStorage.getItem('stockflow_locations')) || [];
         let products = JSON.parse(localStorage.getItem('stockflow_products')) || [];
-        let stock = JSON.parse(localStorage.getItem('stockflow_stock')) || [];
-        let transfers = JSON.parse(localStorage.getItem('stockflow_transfers')) || [];
+        let inventory = JSON.parse(localStorage.getItem('stockflow_inventory')) || {}; // { productId: { locationId: quantity } }
         let deliveries = JSON.parse(localStorage.getItem('stockflow_deliveries')) || [];
-
-        let editingLocationId = null;
-        let editingProductId = null;
-        let editingDeliveryId = null;
-        let currentStockProductId = null;
 
         // ============ SAVE TO LOCAL STORAGE ============
         function saveData() {
             localStorage.setItem('stockflow_locations', JSON.stringify(locations));
             localStorage.setItem('stockflow_products', JSON.stringify(products));
-            localStorage.setItem('stockflow_stock', JSON.stringify(stock));
-            localStorage.setItem('stockflow_transfers', JSON.stringify(transfers));
+            localStorage.setItem('stockflow_inventory', JSON.stringify(inventory));
             localStorage.setItem('stockflow_deliveries', JSON.stringify(deliveries));
             updateDashboard();
             renderLocations();
             renderProducts();
-            renderTransfers();
             renderDeliveries();
         }
 
@@ -242,42 +228,80 @@
         function updateDashboard() {
             document.getElementById('totalProducts').innerText = products.length;
             document.getElementById('totalLocations').innerText = locations.length;
-            document.getElementById('totalDeliveries').innerText = deliveries.length;
-            const lowStock = products.filter(p => {
-                const totalStock = stock.filter(s => s.productId === p.id).reduce((sum, s) => sum + s.quantity, 0);
-                return totalStock <= p.threshold;
-            });
-            document.getElementById('lowStockAlert').innerText = lowStock.length;
 
-            // Location stock breakdown
-            const locStockContainer = document.getElementById('locationStockList');
+            // Calculate low stock items
+            let lowStockItems = [];
+            products.forEach(p => {
+                let totalQty = 0;
+                if (inventory[p.id]) {
+                    Object.values(inventory[p.id]).forEach(qty => totalQty += qty);
+                }
+                if (totalQty <= p.threshold) {
+                    lowStockItems.push(p);
+                }
+            });
+            document.getElementById('lowStockAlert').innerText = lowStockItems.length;
+
+            // Calculate total value
+            let totalVal = 0;
+            products.forEach(p => {
+                let totalQty = 0;
+                if (inventory[p.id]) {
+                    Object.values(inventory[p.id]).forEach(qty => totalQty += qty);
+                }
+                totalVal += totalQty * p.price;
+            });
+            document.getElementById('totalValue').innerText = '$' + totalVal.toFixed(2);
+
+            // Stock by location
+            const stockByLocContainer = document.getElementById('stockByLocation');
             if (locations.length === 0) {
-                locStockContainer.innerHTML = '<div class="text-gray-500">No locations yet</div>';
+                stockByLocContainer.innerHTML = '<div class="text-gray-500">No locations added yet</div>';
             } else {
-                locStockContainer.innerHTML = locations.map(loc => {
-                    const locStock = stock.filter(s => s.locationId === loc.id).reduce((sum, s) => sum + s.quantity, 0);
-                    return `<div class="bg-blue-50 p-2 rounded flex justify-between"><span>📍 ${loc.name}</span><span class="font-bold">${locStock} units</span></div>`;
+                stockByLocContainer.innerHTML = locations.map(loc => {
+                    let locTotal = 0;
+                    Object.keys(inventory).forEach(prodId => {
+                        if (inventory[prodId][loc.id]) {
+                            locTotal += inventory[prodId][loc.id];
+                        }
+                    });
+                    return `<div class="bg-gray-50 p-3 rounded flex justify-between">
+                        <span class="font-semibold">${loc.name} (${loc.city})</span>
+                        <span class="bg-blue-200 text-blue-800 px-3 py-1 rounded-full">${locTotal} units</span>
+                    </div>`;
                 }).join('');
             }
 
-            // Low stock list
+            // Low stock alerts
             const lowStockContainer = document.getElementById('lowStockList');
-            if (lowStock.length === 0) {
+            if (lowStockItems.length === 0) {
                 lowStockContainer.innerHTML = '<div class="text-gray-500">✅ All stock levels healthy</div>';
             } else {
-                lowStockContainer.innerHTML = lowStock.map(p => {
-                    const totalStock = stock.filter(s => s.productId === p.id).reduce((sum, s) => sum + s.quantity, 0);
-                    return `<div class="bg-red-50 p-2 rounded flex justify-between"><span>⚠️ ${p.name}</span><span class="font-bold">${totalStock}/${p.threshold}</span></div>`;
+                lowStockContainer.innerHTML = lowStockItems.map(p => {
+                    let details = '';
+                    if (inventory[p.id]) {
+                        details = locations.map(loc => {
+                            const qty = inventory[p.id][loc.id] || 0;
+                            return `<span class="text-xs bg-gray-200 px-2 py-1 rounded">${loc.city}: ${qty}</span>`;
+                        }).join(' ');
+                    }
+                    return `<div class="bg-red-50 p-3 rounded"><div class="font-bold mb-2">⚠️ ${p.name}</div><div class="flex gap-2 flex-wrap">${details}</div></div>`;
                 }).join('');
             }
 
-            document.getElementById('totalItems').innerText = `Items: ${stock.reduce((sum, s) => sum + s.quantity, 0)}`;
+            document.getElementById('totalItems').innerText = `Items: ${Object.keys(inventory).reduce((sum, prodId) => {
+                let qty = 0;
+                if (inventory[prodId]) Object.values(inventory[prodId]).forEach(q => qty += q);
+                return sum + qty;
+            }, 0)}`;
         }
 
         // ============ LOCATIONS ============
         function renderLocations() {
             const search = document.getElementById('searchLocation')?.value.toLowerCase() || '';
-            let filtered = locations.filter(l => l.name.toLowerCase().includes(search));
+            let filtered = locations.filter(l => 
+                l.name.toLowerCase().includes(search) || l.city.toLowerCase().includes(search)
+            );
 
             const container = document.getElementById('locationsList');
             if (filtered.length === 0) {
@@ -285,24 +309,28 @@
                 return;
             }
 
-            container.innerHTML = filtered.map(l => {
-                const locStock = stock.filter(s => s.locationId === l.id).reduce((sum, s) => sum + s.quantity, 0);
+            container.innerHTML = filtered.map(loc => {
+                let locTotal = 0;
+                Object.keys(inventory).forEach(prodId => {
+                    if (inventory[prodId][loc.id]) {
+                        locTotal += inventory[prodId][loc.id];
+                    }
+                });
                 return `
                     <div class="bg-white p-4 rounded-xl shadow">
                         <div class="flex justify-between items-start mb-2">
                             <div>
-                                <h3 class="font-bold text-lg">${l.name}</h3>
-                                <p class="text-xs text-gray-500">${l.city}, ${l.state}</p>
-                                <p class="text-xs text-gray-500">${l.address}</p>
+                                <h3 class="font-bold text-lg">${loc.name}</h3>
+                                <p class="text-sm text-gray-600">📍 ${loc.city}, ${loc.state}</p>
+                                <p class="text-xs text-gray-500">${loc.address}</p>
                             </div>
-                            <button class="delete-location text-red-600 hover:text-red-800 font-bold" data-id="${l.id}">✕</button>
+                            <button class="delete-location text-red-600 font-bold" data-id="${loc.id}">✕</button>
                         </div>
-                        <div class="mb-3">
-                            <p class="text-sm text-gray-500">Total Stock</p>
-                            <p class="text-2xl font-bold">${locStock} units</p>
+                        <div class="bg-blue-100 text-blue-800 px-3 py-2 rounded mb-2 text-center font-bold">
+                            Total Stock: ${locTotal} units
                         </div>
                         <div class="flex gap-2">
-                            <button class="edit-location flex-1 bg-blue-500 text-white px-3 py-1 rounded text-sm" data-id="${l.id}">✏️ Edit</button>
+                            <button class="edit-location flex-1 bg-blue-500 text-white px-3 py-1 rounded text-sm" data-id="${loc.id}">✏️ Edit</button>
                         </div>
                     </div>
                 `;
@@ -312,27 +340,24 @@
                 btn.addEventListener('click', () => {
                     if (confirm('Delete this location?')) {
                         locations = locations.filter(l => l.id !== btn.dataset.id);
-                        stock = stock.filter(s => s.locationId !== btn.dataset.id);
                         saveData();
                     }
                 });
             });
 
             document.querySelectorAll('.edit-location').forEach(btn => {
-                btn.addEventListener('click', () => editLocation(btn.dataset.id));
+                btn.addEventListener('click', () => {
+                    const loc = locations.find(l => l.id === btn.dataset.id);
+                    if (loc) {
+                        document.getElementById('locationName').value = loc.name;
+                        document.getElementById('locationCity').value = loc.city;
+                        document.getElementById('locationState').value = loc.state;
+                        document.getElementById('locationAddress').value = loc.address;
+                        window._editLocationId = loc.id;
+                        document.getElementById('locationModal').classList.remove('hidden');
+                    }
+                });
             });
-        }
-
-        function editLocation(id) {
-            const l = locations.find(x => x.id === id);
-            if (!l) return;
-            document.getElementById('locationName').value = l.name;
-            document.getElementById('locationCity').value = l.city;
-            document.getElementById('locationState').value = l.state;
-            document.getElementById('locationAddress').value = l.address;
-            document.getElementById('locationModalTitle').innerText = 'Edit Location';
-            editingLocationId = id;
-            document.getElementById('locationModal').classList.remove('hidden');
         }
 
         document.getElementById('addLocationBtn').addEventListener('click', () => {
@@ -340,8 +365,7 @@
             document.getElementById('locationCity').value = '';
             document.getElementById('locationState').value = '';
             document.getElementById('locationAddress').value = '';
-            document.getElementById('locationModalTitle').innerText = 'Add Location';
-            editingLocationId = null;
+            window._editLocationId = null;
             document.getElementById('locationModal').classList.remove('hidden');
         });
 
@@ -353,13 +377,13 @@
 
             if (!name || !city || !state) { alert('Name, City, and State required'); return; }
 
-            if (editingLocationId) {
-                const l = locations.find(x => x.id === editingLocationId);
-                if (l) {
-                    l.name = name;
-                    l.city = city;
-                    l.state = state;
-                    l.address = address;
+            if (window._editLocationId) {
+                const loc = locations.find(l => l.id === window._editLocationId);
+                if (loc) {
+                    loc.name = name;
+                    loc.city = city;
+                    loc.state = state;
+                    loc.address = address;
                 }
             } else {
                 locations.push({
@@ -375,10 +399,14 @@
             document.getElementById('locationModal').classList.add('hidden');
         });
 
+        document.getElementById('searchLocation').addEventListener('input', renderLocations);
+
         // ============ PRODUCTS ============
         function renderProducts() {
             const search = document.getElementById('searchProduct')?.value.toLowerCase() || '';
-            let filtered = products.filter(p => p.name.toLowerCase().includes(search) || p.sku.toLowerCase().includes(search));
+            let filtered = products.filter(p => 
+                p.name.toLowerCase().includes(search) || p.sku.toLowerCase().includes(search)
+            );
 
             const container = document.getElementById('productsList');
             if (filtered.length === 0) {
@@ -387,34 +415,46 @@
             }
 
             container.innerHTML = filtered.map(p => {
-                const totalStock = stock.filter(s => s.productId === p.id).reduce((sum, s) => sum + s.quantity, 0);
-                const isLowStock = totalStock <= p.threshold;
+                let totalQty = 0;
+                let locationBreakdown = '';
+                if (inventory[p.id]) {
+                    locations.forEach(loc => {
+                        const qty = inventory[p.id][loc.id] || 0;
+                        totalQty += qty;
+                        const statusClass = qty <= p.threshold ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800';
+                        locationBreakdown += `<span class="${statusClass} text-xs px-2 py-1 rounded">${loc.city}: ${qty}</span> `;
+                    });
+                } else {
+                    locations.forEach(loc => {
+                        locationBreakdown += `<span class="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded">${loc.city}: 0</span> `;
+                    });
+                }
+                
                 return `
                     <div class="bg-white p-4 rounded-xl shadow">
                         <div class="flex justify-between items-start mb-2">
                             <div>
-                                <h3 class="font-bold text-lg">${p.name} ${isLowStock ? '<span class="text-red-600">●</span>' : ''}</h3>
+                                <h3 class="font-bold text-lg">${p.name}</h3>
                                 <p class="text-xs text-gray-500">SKU: ${p.sku}</p>
                             </div>
-                            <button class="delete-product text-red-600 hover:text-red-800 font-bold" data-id="${p.id}">✕</button>
+                            <button class="delete-product text-red-600 font-bold" data-id="${p.id}">✕</button>
                         </div>
-                        <div class="grid grid-cols-3 gap-2 mb-3">
-                            <div>
-                                <p class="text-sm text-gray-500">Total Stock</p>
-                                <p class="text-xl font-bold">${totalStock}</p>
+                        <div class="grid grid-cols-2 gap-2 mb-3">
+                            <div class="bg-blue-50 p-2 rounded">
+                                <p class="text-xs text-gray-600">Total Stock</p>
+                                <p class="text-lg font-bold">${totalQty}</p>
                             </div>
-                            <div>
-                                <p class="text-sm text-gray-500">Price</p>
-                                <p class="text-xl font-bold">$${p.price.toFixed(2)}</p>
+                            <div class="bg-gray-50 p-2 rounded">
+                                <p class="text-xs text-gray-600">Unit Price</p>
+                                <p class="text-lg font-bold">$${p.price.toFixed(2)}</p>
                             </div>
-                            <div>
-                                <p class="text-sm text-gray-500">Threshold</p>
-                                <p class="text-xl font-bold">${p.threshold}</p>
-                            </div>
+                        </div>
+                        <div class="mb-3 flex gap-1 flex-wrap">
+                            ${locationBreakdown}
                         </div>
                         <div class="flex gap-2">
-                            <button class="edit-product flex-1 bg-blue-500 text-white px-3 py-1 rounded text-sm" data-id="${p.id}">✏️ Edit</button>
                             <button class="add-stock flex-1 bg-green-500 text-white px-3 py-1 rounded text-sm" data-id="${p.id}">➕ Add Stock</button>
+                            <button class="edit-product flex-1 bg-blue-500 text-white px-3 py-1 rounded text-sm" data-id="${p.id}">✏️ Edit</button>
                         </div>
                     </div>
                 `;
@@ -423,40 +463,43 @@
             document.querySelectorAll('.delete-product').forEach(btn => {
                 btn.addEventListener('click', () => {
                     if (confirm('Delete this product?')) {
-                        products = products.filter(p => p.id !== btn.dataset.id);
-                        stock = stock.filter(s => s.productId !== btn.dataset.id);
+                        const prodId = btn.dataset.id;
+                        products = products.filter(p => p.id !== prodId);
+                        delete inventory[prodId];
                         saveData();
                     }
                 });
             });
 
             document.querySelectorAll('.edit-product').forEach(btn => {
-                btn.addEventListener('click', () => editProduct(btn.dataset.id));
+                btn.addEventListener('click', () => {
+                    const prod = products.find(p => p.id === btn.dataset.id);
+                    if (prod) {
+                        document.getElementById('productName').value = prod.name;
+                        document.getElementById('productSku').value = prod.sku;
+                        document.getElementById('productPrice').value = prod.price;
+                        document.getElementById('productThreshold').value = prod.threshold;
+                        window._editProductId = prod.id;
+                        document.getElementById('productModalTitle').innerText = 'Edit Product';
+                        document.getElementById('productModal').classList.remove('hidden');
+                    }
+                });
             });
 
             document.querySelectorAll('.add-stock').forEach(btn => {
-                btn.addEventListener('click', () => openAddStock(btn.dataset.id));
+                btn.addEventListener('click', () => {
+                    window._stockProductId = btn.dataset.id;
+                    const prod = products.find(p => p.id === window._stockProductId);
+                    document.getElementById('stockModalProduct').innerText = `Add stock for: ${prod.name}`;
+                    
+                    const select = document.getElementById('stockLocation');
+                    select.innerHTML = '<option>Select Location</option>' + 
+                        locations.map(l => `<option value="${l.id}">${l.name} (${l.city})</option>`).join('');
+                    
+                    document.getElementById('stockQuantity').value = '';
+                    document.getElementById('stockModal').classList.remove('hidden');
+                });
             });
-        }
-
-        function editProduct(id) {
-            const p = products.find(x => x.id === id);
-            if (!p) return;
-            document.getElementById('productName').value = p.name;
-            document.getElementById('productSku').value = p.sku;
-            document.getElementById('productPrice').value = p.price;
-            document.getElementById('productThreshold').value = p.threshold;
-            document.getElementById('productModalTitle').innerText = 'Edit Product';
-            editingProductId = id;
-            document.getElementById('productModal').classList.remove('hidden');
-        }
-
-        function openAddStock(id) {
-            currentStockProductId = id;
-            document.getElementById('stockLocation').innerHTML = '<option>Select Location</option>' + 
-                locations.map(l => `<option value="${l.id}">${l.name}</option>`).join('');
-            document.getElementById('stockQuantity').value = '';
-            document.getElementById('stockModal').classList.remove('hidden');
         }
 
         document.getElementById('addProductBtn').addEventListener('click', () => {
@@ -464,8 +507,8 @@
             document.getElementById('productSku').value = '';
             document.getElementById('productPrice').value = '';
             document.getElementById('productThreshold').value = '10';
+            window._editProductId = null;
             document.getElementById('productModalTitle').innerText = 'Add Product';
-            editingProductId = null;
             document.getElementById('productModal').classList.remove('hidden');
         });
 
@@ -477,18 +520,20 @@
 
             if (!name || !sku) { alert('Name and SKU required'); return; }
 
-            if (editingProductId) {
-                const p = products.find(x => x.id === editingProductId);
-                if (p) {
-                    p.name = name;
-                    p.sku = sku;
-                    p.price = price;
-                    p.threshold = threshold;
+            if (window._editProductId) {
+                const prod = products.find(p => p.id === window._editProductId);
+                if (prod) {
+                    prod.name = name;
+                    prod.sku = sku;
+                    prod.price = price;
+                    prod.threshold = threshold;
                 }
             } else {
-                products.push({
-                    id: Date.now().toString(),
-                    name, sku, price, threshold
+                const productId = Date.now().toString();
+                products.push({ id: productId, name, sku, price, threshold });
+                inventory[productId] = {};
+                locations.forEach(loc => {
+                    inventory[productId][loc.id] = 0;
                 });
             }
             saveData();
@@ -499,22 +544,21 @@
             document.getElementById('productModal').classList.add('hidden');
         });
 
-        document.getElementById('saveStockBtn').addEventListener('click', () => {
-            const locationId = document.getElementById('stockLocation').value;
-            const quantity = parseInt(document.getElementById('stockQuantity').value) || 0;
+        document.getElementById('searchProduct').addEventListener('input', renderProducts);
 
-            if (!locationId || locationId === 'Select Location' || !quantity || quantity <= 0) {
+        // ============ STOCK UPDATE ============
+        document.getElementById('saveStockBtn').addEventListener('click', () => {
+            const prodId = window._stockProductId;
+            const locId = document.getElementById('stockLocation').value;
+            const qty = parseInt(document.getElementById('stockQuantity').value) || 0;
+
+            if (!locId || locId === 'Select Location' || !qty || qty <= 0) {
                 alert('Select location and enter valid quantity');
                 return;
             }
 
-            stock.push({
-                id: Date.now().toString(),
-                productId: currentStockProductId,
-                locationId: locationId,
-                quantity: quantity,
-                date: new Date().toISOString()
-            });
+            if (!inventory[prodId]) inventory[prodId] = {};
+            inventory[prodId][locId] = (inventory[prodId][locId] || 0) + qty;
 
             saveData();
             document.getElementById('stockModal').classList.add('hidden');
@@ -524,270 +568,184 @@
             document.getElementById('stockModal').classList.add('hidden');
         });
 
-        // ============ TRANSFERS ============
-        function renderTransfers() {
-            const search = document.getElementById('searchTransfer')?.value.toLowerCase() || '';
-            let filtered = transfers.filter(t => {
-                const prod = products.find(p => p.id === t.productId);
-                const fromLoc = locations.find(l => l.id === t.fromLocationId);
-                const toLoc = locations.find(l => l.id === t.toLocationId);
-                return (prod?.name.toLowerCase().includes(search) || fromLoc?.name.toLowerCase().includes(search) || toLoc?.name.toLowerCase().includes(search));
-            });
-
-            const container = document.getElementById('transfersList');
-            if (filtered.length === 0) {
-                container.innerHTML = '<div class="text-center p-4 bg-white rounded">No transfers found</div>';
-                return;
-            }
-
-            container.innerHTML = filtered.map(t => {
-                const prod = products.find(p => p.id === t.productId);
-                const fromLoc = locations.find(l => l.id === t.fromLocationId);
-                const toLoc = locations.find(l => l.id === t.toLocationId);
-                return `
-                    <div class="bg-white p-4 rounded-xl shadow">
-                        <div class="flex justify-between items-start mb-2">
-                            <div>
-                                <h3 class="font-bold">${prod?.name || 'Unknown'} × ${t.quantity}</h3>
-                                <p class="text-sm text-gray-600">From: ${fromLoc?.name || 'Unknown'}</p>
-                                <p class="text-sm text-gray-600">To: ${toLoc?.name || 'Unknown'}</p>
-                            </div>
-                            <button class="delete-transfer text-red-600 hover:text-red-800 font-bold" data-id="${t.id}">✕</button>
-                        </div>
-                        <div class="text-xs text-gray-400">${new Date(t.date).toLocaleString()}</div>
-                    </div>
-                `;
-            }).join('');
-
-            document.querySelectorAll('.delete-transfer').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    if (confirm('Delete this transfer?')) {
-                        transfers = transfers.filter(t => t.id !== btn.dataset.id);
-                        saveData();
-                    }
-                });
-            });
-        }
-
-        document.getElementById('addTransferBtn').addEventListener('click', () => {
-            document.getElementById('transferProduct').innerHTML = '<option>Select Product</option>' + 
-                products.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
-            document.getElementById('transferFrom').innerHTML = '<option>From Location</option>' + 
-                locations.map(l => `<option value="${l.id}">${l.name}</option>`).join('');
-            document.getElementById('transferTo').innerHTML = '<option>To Location</option>' + 
-                locations.map(l => `<option value="${l.id}">${l.name}</option>`).join('');
-            document.getElementById('transferQuantity').value = '';
-            document.getElementById('transferModal').classList.remove('hidden');
-        });
-
-        document.getElementById('saveTransferBtn').addEventListener('click', () => {
-            const productId = document.getElementById('transferProduct').value;
-            const fromLocationId = document.getElementById('transferFrom').value;
-            const toLocationId = document.getElementById('transferTo').value;
-            const quantity = parseInt(document.getElementById('transferQuantity').value) || 0;
-
-            if (!productId || !fromLocationId || !toLocationId || !quantity) {
-                alert('All fields required');
-                return;
-            }
-
-            if (fromLocationId === toLocationId) {
-                alert('Cannot transfer to the same location');
-                return;
-            }
-
-            const fromStock = stock.find(s => s.productId === productId && s.locationId === fromLocationId);
-            if (!fromStock || fromStock.quantity < quantity) {
-                alert('Not enough stock at source location');
-                return;
-            }
-
-            fromStock.quantity -= quantity;
-
-            const toStock = stock.find(s => s.productId === productId && s.locationId === toLocationId);
-            if (toStock) {
-                toStock.quantity += quantity;
-            } else {
-                stock.push({
-                    id: Date.now().toString(),
-                    productId,
-                    locationId: toLocationId,
-                    quantity,
-                    date: new Date().toISOString()
-                });
-            }
-
-            transfers.push({
-                id: Date.now().toString(),
-                productId,
-                fromLocationId,
-                toLocationId,
-                quantity,
-                date: new Date().toISOString()
-            });
-
-            saveData();
-            document.getElementById('transferModal').classList.add('hidden');
-        });
-
-        document.getElementById('closeTransferModal').addEventListener('click', () => {
-            document.getElementById('transferModal').classList.add('hidden');
-        });
-
         // ============ DELIVERIES ============
         function renderDeliveries() {
             const search = document.getElementById('searchDelivery')?.value.toLowerCase() || '';
             let filtered = deliveries.filter(d => {
                 const prod = products.find(p => p.id === d.productId);
                 const loc = locations.find(l => l.id === d.locationId);
-                return (prod?.name.toLowerCase().includes(search) || loc?.name.toLowerCase().includes(search) || d.customer.toLowerCase().includes(search));
+                return (prod?.name.toLowerCase().includes(search) || 
+                        loc?.name.toLowerCase().includes(search) ||
+                        d.customerName.toLowerCase().includes(search)) || false;
             });
 
             const container = document.getElementById('deliveriesList');
             if (filtered.length === 0) {
-                container.innerHTML = '<div class="text-center p-4 bg-white rounded">No deliveries found</div>';
+                container.innerHTML = '<div class="text-center p-4 bg-white rounded">No deliveries recorded</div>';
                 return;
             }
 
             container.innerHTML = filtered.map(d => {
                 const prod = products.find(p => p.id === d.productId);
                 const loc = locations.find(l => l.id === d.locationId);
-                const statusColor = d.status === 'completed' ? 'bg-green-100' : d.status === 'failed' ? 'bg-red-100' : 'bg-yellow-100';
+                const date = new Date(d.date).toLocaleDateString();
+                const statusColors = {
+                    'pending': 'bg-yellow-100 text-yellow-800',
+                    'completed': 'bg-green-100 text-green-800',
+                    'failed': 'bg-red-100 text-red-800'
+                };
+
                 return `
                     <div class="bg-white p-4 rounded-xl shadow">
                         <div class="flex justify-between items-start mb-2">
                             <div>
-                                <h3 class="font-bold">${prod?.name || 'Unknown'}</h3>
-                                <p class="text-sm text-gray-600">📍 ${loc?.name || 'Unknown'}</p>
-                                <p class="text-sm text-gray-600">👤 ${d.customer}</p>
-                                <p class="text-xs text-gray-500">${d.address}</p>
+                                <h3 class="font-bold">${prod?.name} × ${d.quantity}</h3>
+                                <p class="text-sm text-gray-600">📍 ${loc?.name} (${loc?.city})</p>
+                                <p class="text-sm text-gray-600">👤 ${d.customerName}</p>
+                                <p class="text-xs text-gray-500">📍 ${d.address}</p>
                             </div>
-                            <span class="text-xs font-bold ${statusColor} px-2 py-1 rounded">${d.status.toUpperCase()}</span>
-                        </div>
-                        <div class="grid grid-cols-2 gap-2 mb-2">
-                            <div>
-                                <p class="text-xs text-gray-500">In Stock</p>
-                                <p class="font-bold">${d.quantityInStock}</p>
-                            </div>
-                            <div>
-                                <p class="text-xs text-gray-500">Delivered</p>
-                                <p class="font-bold text-blue-600">${d.quantityDelivered}</p>
+                            <div class="text-right">
+                                <span class="text-xs ${statusColors[d.status]} px-2 py-1 rounded block mb-2">${d.status.toUpperCase()}</span>
+                                <span class="text-xs bg-blue-200 text-blue-800 px-2 py-1 rounded block">${date}</span>
                             </div>
                         </div>
-                        <div class="text-xs text-gray-400 mb-2">${new Date(d.date).toLocaleString()}</div>
                         <div class="flex gap-2">
-                            <select class="update-delivery-status flex-1 border p-1 rounded text-sm" data-id="${d.id}">
-                                <option value="pending" ${d.status === 'pending' ? 'selected' : ''}>Pending</option>
-                                <option value="completed" ${d.status === 'completed' ? 'selected' : ''}>Completed</option>
-                                <option value="failed" ${d.status === 'failed' ? 'selected' : ''}>Failed</option>
-                            </select>
-                            <button class="edit-delivery bg-blue-500 text-white px-3 py-1 rounded text-sm" data-id="${d.id}">✏️ Edit</button>
-                            <button class="delete-delivery bg-red-500 text-white px-3 py-1 rounded text-sm" data-id="${d.id}">✕</button>
+                            <button class="edit-delivery flex-1 bg-blue-500 text-white px-3 py-1 rounded text-sm" data-id="${d.id}">✏️ Edit</button>
+                            <button class="delete-delivery flex-1 bg-red-500 text-white px-3 py-1 rounded text-sm" data-id="${d.id}">🗑️ Delete</button>
                         </div>
                     </div>
                 `;
             }).join('');
 
-            document.querySelectorAll('.update-delivery-status').forEach(select => {
-                select.addEventListener('change', () => {
-                    const d = deliveries.find(x => x.id === select.dataset.id);
-                    if (d) { d.status = select.value; saveData(); }
-                });
-            });
-
-            document.querySelectorAll('.edit-delivery').forEach(btn => {
-                btn.addEventListener('click', () => editDelivery(btn.dataset.id));
-            });
-
             document.querySelectorAll('.delete-delivery').forEach(btn => {
                 btn.addEventListener('click', () => {
-                    if (confirm('Delete delivery?')) {
+                    if (confirm('Delete this delivery? Stock will be restored.')) {
+                        const delivery = deliveries.find(d => d.id === btn.dataset.id);
+                        if (delivery) {
+                            // Restore stock when delivery is deleted
+                            if (inventory[delivery.productId]) {
+                                inventory[delivery.productId][delivery.locationId] = 
+                                    (inventory[delivery.productId][delivery.locationId] || 0) + delivery.quantity;
+                            }
+                        }
                         deliveries = deliveries.filter(d => d.id !== btn.dataset.id);
                         saveData();
                     }
                 });
             });
+
+            document.querySelectorAll('.edit-delivery').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const delivery = deliveries.find(d => d.id === btn.dataset.id);
+                    if (delivery) {
+                        window._editDeliveryId = delivery.id;
+                        document.getElementById('deliveryLocation').value = delivery.locationId;
+                        document.getElementById('deliveryProduct').value = delivery.productId;
+                        document.getElementById('deliveryQuantity').value = delivery.quantity;
+                        document.getElementById('customerName').value = delivery.customerName;
+                        document.getElementById('customerAddress').value = delivery.address;
+                        document.getElementById('deliveryStatus').value = delivery.status;
+                        document.getElementById('deliveryModalTitle').innerText = 'Edit Delivery';
+                        updateCurrentStock();
+                        document.getElementById('deliveryModal').classList.remove('hidden');
+                    }
+                });
+            });
         }
 
-        function editDelivery(id) {
-            const d = deliveries.find(x => x.id === id);
-            if (!d) return;
-            document.getElementById('deliveryLocation').innerHTML = '<option>Select Location</option>' + 
-                locations.map(l => `<option value="${l.id}" ${l.id === d.locationId ? 'selected' : ''}>${l.name}</option>`).join('');
-            document.getElementById('deliveryProduct').innerHTML = '<option>Select Product</option>' + 
-                products.map(p => `<option value="${p.id}" ${p.id === d.productId ? 'selected' : ''}>${p.name}</option>`).join('');
-            document.getElementById('deliveryQuantityInStock').value = d.quantityInStock;
-            document.getElementById('deliveryQuantityDelivered').value = d.quantityDelivered;
-            document.getElementById('deliveryCustomer').value = d.customer;
-            document.getElementById('deliveryAddress').value = d.address;
-            document.getElementById('deliveryStatus').value = d.status;
-            document.getElementById('deliveryModalTitle').innerText = 'Edit Delivery';
-            editingDeliveryId = id;
-            document.getElementById('deliveryModal').classList.remove('hidden');
-        }
-
-        document.getElementById('addDeliveryBtn').addEventListener('click', () => {
-            document.getElementById('deliveryLocation').innerHTML = '<option>Select Location</option>' + 
-                locations.map(l => `<option value="${l.id}">${l.name}</option>`).join('');
-            document.getElementById('deliveryProduct').innerHTML = '<option>Select Product</option>' + 
-                products.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
-            document.getElementById('deliveryQuantityInStock').value = '';
-            document.getElementById('deliveryQuantityDelivered').value = '';
-            document.getElementById('deliveryCustomer').value = '';
-            document.getElementById('deliveryAddress').value = '';
-            document.getElementById('deliveryStatus').value = 'pending';
-            document.getElementById('deliveryModalTitle').innerText = 'Record Delivery';
-            editingDeliveryId = null;
-            document.getElementById('deliveryModal').classList.remove('hidden');
-        });
-
-        document.getElementById('deliveryProduct').addEventListener('change', function() {
-            const productId = this.value;
-            const locationId = document.getElementById('deliveryLocation').value;
-            if (productId && locationId) {
-                const s = stock.find(st => st.productId === productId && st.locationId === locationId);
-                document.getElementById('deliveryQuantityInStock').value = s ? s.quantity : 0;
+        function updateCurrentStock() {
+            const locId = document.getElementById('deliveryLocation').value;
+            const prodId = document.getElementById('deliveryProduct').value;
+            
+            if (locId && prodId && locId !== 'Select Location' && prodId !== 'Select Product') {
+                const currentQty = (inventory[prodId]?.[locId]) || 0;
+                document.getElementById('currentStockDisplay').value = currentQty + ' units';
+            } else {
+                document.getElementById('currentStockDisplay').value = '';
             }
+        }
+
+        document.getElementById('recordDeliveryBtn').addEventListener('click', () => {
+            if (products.length === 0) { alert('Add products first'); return; }
+            if (locations.length === 0) { alert('Add locations first'); return; }
+
+            const locSelect = document.getElementById('deliveryLocation');
+            locSelect.innerHTML = '<option>Select Location</option>' + 
+                locations.map(l => `<option value="${l.id}">${l.name} (${l.city})</option>`).join('');
+
+            const prodSelect = document.getElementById('deliveryProduct');
+            prodSelect.innerHTML = '<option>Select Product</option>' + 
+                products.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+
+            document.getElementById('deliveryQuantity').value = '';
+            document.getElementById('customerName').value = '';
+            document.getElementById('customerAddress').value = '';
+            document.getElementById('deliveryStatus').value = 'pending';
+            document.getElementById('currentStockDisplay').value = '';
+            window._editDeliveryId = null;
+            document.getElementById('deliveryModalTitle').innerText = 'Record Delivery';
+            document.getElementById('deliveryModal').classList.remove('hidden');
         });
+
+        document.getElementById('deliveryLocation').addEventListener('change', updateCurrentStock);
+        document.getElementById('deliveryProduct').addEventListener('change', updateCurrentStock);
 
         document.getElementById('saveDeliveryBtn').addEventListener('click', () => {
-            const locationId = document.getElementById('deliveryLocation').value;
-            const productId = document.getElementById('deliveryProduct').value;
-            const quantityInStock = parseInt(document.getElementById('deliveryQuantityInStock').value) || 0;
-            const quantityDelivered = parseInt(document.getElementById('deliveryQuantityDelivered').value) || 0;
-            const customer = document.getElementById('deliveryCustomer').value.trim();
-            const address = document.getElementById('deliveryAddress').value.trim();
+            const locId = document.getElementById('deliveryLocation').value;
+            const prodId = document.getElementById('deliveryProduct').value;
+            const qty = parseInt(document.getElementById('deliveryQuantity').value) || 0;
+            const customerName = document.getElementById('customerName').value.trim();
+            const address = document.getElementById('customerAddress').value.trim();
             const status = document.getElementById('deliveryStatus').value;
 
-            if (!locationId || !productId || !quantityDelivered || !customer) {
-                alert('All fields required');
+            if (!locId || !prodId || locId === 'Select Location' || prodId === 'Select Product') {
+                alert('Select location and product');
                 return;
             }
 
-            if (quantityDelivered > quantityInStock) {
-                alert('Delivery quantity cannot exceed stock');
+            if (!qty || qty <= 0) {
+                alert('Enter valid quantity');
                 return;
             }
 
-            if (editingDeliveryId) {
-                const d = deliveries.find(x => x.id === editingDeliveryId);
-                if (d) {
-                    d.locationId = locationId;
-                    d.productId = productId;
-                    d.quantityInStock = quantityInStock;
-                    d.quantityDelivered = quantityDelivered;
-                    d.customer = customer;
-                    d.address = address;
-                    d.status = status;
+            const currentStock = (inventory[prodId]?.[locId]) || 0;
+            if (qty > currentStock) {
+                alert(`Not enough stock! Available: ${currentStock} units`);
+                return;
+            }
+
+            if (!customerName || !address) {
+                alert('Customer name and address required');
+                return;
+            }
+
+            if (window._editDeliveryId) {
+                // Edit existing delivery
+                const oldDelivery = deliveries.find(d => d.id === window._editDeliveryId);
+                if (oldDelivery) {
+                    // Restore old quantity
+                    inventory[oldDelivery.productId][oldDelivery.locationId] += oldDelivery.quantity;
+                    
+                    // Deduct new quantity
+                    inventory[prodId][locId] -= qty;
+                    
+                    // Update delivery
+                    oldDelivery.locationId = locId;
+                    oldDelivery.productId = prodId;
+                    oldDelivery.quantity = qty;
+                    oldDelivery.customerName = customerName;
+                    oldDelivery.address = address;
+                    oldDelivery.status = status;
                 }
             } else {
+                // Create new delivery
+                inventory[prodId][locId] -= qty;
                 deliveries.push({
                     id: Date.now().toString(),
-                    locationId,
-                    productId,
-                    quantityInStock,
-                    quantityDelivered,
-                    customer,
+                    locationId: locId,
+                    productId: prodId,
+                    quantity: qty,
+                    customerName,
                     address,
                     status,
                     date: new Date().toISOString()
@@ -801,6 +759,8 @@
         document.getElementById('closeDeliveryModal').addEventListener('click', () => {
             document.getElementById('deliveryModal').classList.add('hidden');
         });
+
+        document.getElementById('searchDelivery').addEventListener('input', renderDeliveries);
 
         // ============ TAB SWITCHING ============
         document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -817,28 +777,24 @@
             });
         });
 
-        // ============ SEARCH ============
-        document.getElementById('searchLocation').addEventListener('input', renderLocations);
-        document.getElementById('searchProduct').addEventListener('input', renderProducts);
-        document.getElementById('searchTransfer').addEventListener('input', renderTransfers);
-        document.getElementById('searchDelivery').addEventListener('input', renderDeliveries);
-
         // ============ EXPORT ============
         document.getElementById('exportProductsBtn').addEventListener('click', () => {
-            const data = products.map(p => {
-                const totalStock = stock.filter(s => s.productId === p.id).reduce((sum, s) => sum + s.quantity, 0);
-                return {
-                    Name: p.name,
-                    SKU: p.sku,
-                    'Total Stock': totalStock,
-                    Price: p.price,
-                    Threshold: p.threshold
-                };
+            let data = [];
+            products.forEach(p => {
+                let row = { 'Product': p.name, 'SKU': p.sku, 'Price': p.price };
+                let total = 0;
+                locations.forEach(l => {
+                    const qty = (inventory[p.id]?.[l.id]) || 0;
+                    row[l.city] = qty;
+                    total += qty;
+                });
+                row['Total'] = total;
+                data.push(row);
             });
             const ws = XLSX.utils.json_to_sheet(data);
             const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, 'Products');
-            XLSX.writeFile(wb, 'stockflow-products.xlsx');
+            XLSX.utils.book_append_sheet(wb, ws, 'Inventory');
+            XLSX.writeFile(wb, 'stockflow-inventory.xlsx');
         });
 
         // ============ CLEAR ALL ============
@@ -846,8 +802,7 @@
             if (confirm('⚠️ This will delete ALL data. Are you sure?')) {
                 locations = [];
                 products = [];
-                stock = [];
-                transfers = [];
+                inventory = {};
                 deliveries = [];
                 saveData();
             }
@@ -857,7 +812,6 @@
         updateDashboard();
         renderLocations();
         renderProducts();
-        renderTransfers();
         renderDeliveries();
     </script>
 </body>
